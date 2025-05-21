@@ -1,0 +1,12 @@
+.fi-header {
+    background-color: #28a745; /* Màu xanh lá */
+    color: #ffffff;
+}
+
+.fi-header .fi-header-content {
+    color: #ffffff;
+}
+
+.fi-header a:hover {
+    color: #d1d5db;
+}
