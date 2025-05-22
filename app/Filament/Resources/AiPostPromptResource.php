@@ -316,12 +316,25 @@ class AiPostPromptResource extends Resource
                     ->limit(25)
                     ->tooltip(fn($record) => $record->prompt)
                     ->default('Được tạo bằng hình ảnh'),
-                Tables\Columns\TextColumn::make('image_category')
-                    ->label('Phân loại hình ảnh')
-                    ->formatStateUsing(fn($state) => $state ? \App\Models\Category::find($state)['category'] ?? 'N/A' : 'Chưa chọn'),
-                Tables\Columns\TextColumn::make('image_count')
-                    ->label('Số ảnh random')
-                    ->formatStateUsing(fn($state) => $state ? "$state ảnh" : 'Chưa chọn'),
+            ->label('Cài Đặt Hình Ảnh')
+            ->formatStateUsing(function ($state, $record) {
+                $imageSettings = $record->image_settings ?? [];
+                if (empty($imageSettings)) {
+                    return 'Chưa chọn';
+                }
+
+                return collect($imageSettings)
+                    ->map(function ($setting) {
+                        $categoryId = $setting['image_category'] ?? null;
+                        $count = $setting['image_count'] ?? null;
+                        $categoryName = $categoryId
+                            ? \App\Models\Category::find($categoryId)['category'] ?? 'N/A'
+                            : 'Chưa chọn';
+                        return $count ? "$categoryName: $count" : null;
+                    })
+                    ->filter()
+                    ->join(', ');
+            }),
 
                 Tables\Columns\SelectColumn::make('status')
                     ->label('Trạng thái')
