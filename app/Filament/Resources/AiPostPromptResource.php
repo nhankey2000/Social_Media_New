@@ -214,9 +214,9 @@ class AiPostPromptResource extends Resource
                             $platformId = $get('platform_id');
                             return $platformId
                                 ? PlatformAccount::where('platform_id', $platformId)
-                                ->where('is_active', true) // Chỉ lấy tài khoản có is_active = true
-                                ->pluck('name', 'id')
-                                ->toArray()
+                                    ->where('is_active', true) // Chỉ lấy tài khoản có is_active = true
+                                    ->pluck('name', 'id')
+                                    ->toArray()
                                 : [];
                         })
                         ->visible(fn(callable $get) => $get('post_option') === 'selected')
@@ -316,26 +316,26 @@ class AiPostPromptResource extends Resource
                     ->limit(25)
                     ->tooltip(fn($record) => $record->prompt)
                     ->default('Được tạo bằng hình ảnh'),
-            ->label('Cài Đặt Hình Ảnh')
-            ->formatStateUsing(function ($state, $record) {
-                $imageSettings = $record->image_settings ?? [];
-                if (empty($imageSettings)) {
-                    return 'Chưa chọn';
-                }
+                Tables\Columns\TextColumn::make('image_settings')
+                    ->label('Cài Đặt Hình Ảnh')
+                    ->formatStateUsing(function ($state, $record) {
+                        $imageSettings = $record->image_settings ?? [];
+                        if (empty($imageSettings)) {
+                            return 'Chưa chọn';
+                        }
 
-                return collect($imageSettings)
-                    ->map(function ($setting) {
-                        $categoryId = $setting['image_category'] ?? null;
-                        $count = $setting['image_count'] ?? null;
-                        $categoryName = $categoryId
-                            ? \App\Models\Category::find($categoryId)['category'] ?? 'N/A'
-                            : 'Chưa chọn';
-                        return $count ? "$categoryName: $count" : null;
-                    })
-                    ->filter()
-                    ->join(', ');
-            }),
-
+                        return collect($imageSettings)
+                            ->map(function ($setting) {
+                                $categoryId = $setting['image_category'] ?? null;
+                                $count = $setting['image_count'] ?? null;
+                                $categoryName = $categoryId
+                                    ? \App\Models\Category::find($categoryId)['category'] ?? 'N/A'
+                                    : 'Chưa chọn';
+                                return $count ? "$categoryName: $count" : null;
+                            })
+                            ->filter()
+                            ->join(', ');
+                    }),
                 Tables\Columns\SelectColumn::make('status')
                     ->label('Trạng thái')
                     ->options([
