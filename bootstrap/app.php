@@ -17,5 +17,5 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })
-    ->withConsoleKernel(Kernel::class) // 👈 Đặt SAU .withExceptions chứ KHÔNG đặt bên trong
+
     ->create();
