@@ -3,9 +3,10 @@
 namespace App\Filament\Resources\MessageResource\Pages;
 
 use App\Filament\Resources\MessageResource;
-use Filament\Resources\Pages\ListRecords;
+use Filament\Resources\Pages\EditRecord;
 
-class ListMessages extends ListRecords
+class EditMessage extends EditRecord // ✅ Đúng
+
 {
     protected static string $resource = MessageResource::class;
 
