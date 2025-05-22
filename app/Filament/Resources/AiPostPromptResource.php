@@ -323,7 +323,6 @@ class AiPostPromptResource extends Resource
                         if (empty($imageSettings)) {
                             return 'Chưa chọn';
                         }
-
                         return collect($imageSettings)
                             ->map(function ($setting) {
                                 $categoryId = $setting['image_category'] ?? null;
@@ -336,17 +335,18 @@ class AiPostPromptResource extends Resource
                             ->filter()
                             ->join(', ');
                     }),
-                Tables\Columns\SelectColumn::make('status')
+                Tables\Columns\TextColumn::make('status')
                     ->label('Trạng thái')
-                    ->options([
-                        'pending' => 'Chờ xử lý',
-                        'generating' => 'Đang tạo nội dung',
-                        'generated' => 'Đã tạo nội dung',
-                        'posted' => 'Đã đăng',
-                    ])
-                    ->sortable()
-                    ->disabled(),
-
+                    ->formatStateUsing(function ($state) {
+                        return match ($state) {
+                            'pending' => 'Chờ xử lý',
+                            'generating' => 'Đang tạo nội dung',
+                            'generated' => 'Đã tạo nội dung',
+                            'posted' => 'Đã đăng',
+                            default => 'Không xác định',
+                        };
+                    })
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Người Lên Lịch')
                     ->sortable()
