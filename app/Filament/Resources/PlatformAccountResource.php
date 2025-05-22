@@ -215,12 +215,12 @@ class PlatformAccountResource extends Resource
                     ->color('primary')
                     ->url(fn (PlatformAccount $record): string => static::getUrl('analytics', ['record' => $record]))
                     ->visible(fn (PlatformAccount $record): bool => $record->platform_id == 1),
-                Action::make('view_chart')
-                    ->label('Xem Biểu Đồ')
-                    ->icon('heroicon-o-arrow-trending-up')
-                    ->color('info')
-                    ->url(fn (PlatformAccount $record): string => static::getUrl('chart', ['record' => $record]))
-                    ->visible(fn (PlatformAccount $record): bool => $record->platform_id == 1),
+//                Action::make('view_chart')
+//                    ->label('Xem Biểu Đồ')
+//                    ->icon('heroicon-o-arrow-trending-up')
+//                    ->color('info')
+//                    ->url(fn (PlatformAccount $record): string => static::getUrl('chart', ['record' => $record]))
+//                    ->visible(fn (PlatformAccount $record): bool => $record->platform_id == 1),
                 Tables\Actions\EditAction::make()
                     ->label('Sửa')
                     ->icon('heroicon-o-pencil')
