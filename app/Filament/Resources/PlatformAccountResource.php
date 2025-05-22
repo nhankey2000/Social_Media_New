@@ -318,7 +318,7 @@ class PlatformAccountResource extends Resource
             // 'create' => Pages\CreatePlatformAccount::route('/create'),
             'edit' => Pages\EditPlatformAccount::route('/{record}/edit'),
             'analytics' => Pages\AnalyticsPlatformAccount::route('/{record}/analytics'),
-            'chart' => Pages\ChartPlatformAccount::route('/{record}/chart'),
+//            'chart' => Pages\ChartPlatformAccount::route('/{record}/chart'),
         ];
     }
 }
