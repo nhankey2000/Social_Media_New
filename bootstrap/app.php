@@ -1,5 +1,5 @@
 <?php
-
+use App\Console\Kernel; // 👈 THÊM DÒNG NÀY
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -15,4 +15,5 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
+        ->withConsoleKernel(Kernel::class) // 👈 THÊM DÒNG NÀY
     })->create();
