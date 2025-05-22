@@ -12,9 +12,9 @@ class Kernel extends ConsoleKernel
         $schedule->call(function () {
             Log::info('✅ Task schedule chạy OK lúc: ' . now());
         })->everyMinute();
-    $schedule->command('posts:publish-scheduled')->everyMinute();
-    $schedule->command('prompts:process')->everyMinute();
-    $schedule->command('analytics:sync')->everyMinute();
+        $schedule->command('posts:publish-scheduled')->everyMinute();
+        $schedule->command('prompts:process')->everyMinute();
+        $schedule->command('analytics:sync')->everyMinute();
 
     }
 

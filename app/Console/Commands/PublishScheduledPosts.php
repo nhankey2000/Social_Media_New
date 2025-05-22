@@ -21,6 +21,7 @@ class PublishScheduledPosts extends Command
 
     public function handle()
     {
+        Log::info('✅ Command posts:publish-scheduled đã được gọi từ schedule lúc: ' . now());
         $this->info('🔍 Đang kiểm tra các bài viết và lịch đăng lại đã đến thời gian đăng...');
 
         // Lấy thời gian hiện tại
