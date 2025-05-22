@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\PlatformAccountResource\Widgets;
+namespace App\Filament\Widgets;
 
 use Filament\Tables;
 use Filament\Tables\Table;
