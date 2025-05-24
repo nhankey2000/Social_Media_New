@@ -31,6 +31,10 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->brandLogo(asset('images/logo.png'))
             ->brandLogoHeight('50px') // 👈 chỉnh tại đây
+            ->styles([
+                asset('css/filament-custom.css'), // Nhúng CSS
+            ])
+
             ->renderHook('panels::footer', function () {
                 return view('components.chatbot');
             })
@@ -43,7 +47,8 @@ class AdminPanelProvider extends PanelProvider
                 PlatformAccountResource::class, // Đăng ký thủ công PlatformAccountResource
                 MessageResource::class, // Đăng ký thủ công MessageResource
             ])
-//            ->viteTheme('resources/css/filament-overrides.css')
+
+            ->viteTheme('resources/css/filament/theme.css')
 
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             // ->pages([
