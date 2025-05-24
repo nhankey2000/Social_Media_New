@@ -31,9 +31,7 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->brandLogo(asset('images/logo.png'))
             ->brandLogoHeight('50px') // 👈 chỉnh tại đây
-            ->styles([
-                asset('css/filament-custom.css'), // Nhúng CSS
-            ])
+
 
             ->renderHook('panels::footer', function () {
                 return view('components.chatbot');
