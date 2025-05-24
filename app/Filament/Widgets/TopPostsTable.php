@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Filament\Widgets;
+    namespace App\Filament\Widgets;
 
-use Filament\Tables;
-use Filament\Tables\Table;
-use Filament\Widgets\TableWidget as BaseWidget;
-use App\Models\Post;
-use Illuminate\Database\Eloquent\Builder;
+    use Filament\Tables;
+    use Filament\Tables\Table;
+    use Filament\Widgets\TableWidget as BaseWidget;
+    use App\Models\Post;
+    use Illuminate\Database\Eloquent\Builder;
 
-class TopPostsTable extends BaseWidget
+    class TopPostsTable extends BaseWidget
 {
     protected static ?string $heading = 'Bài Đăng Hiệu Suất Cao Nhất (30 Ngày Qua)';
     public $platformAccount;

@@ -14,7 +14,7 @@ class Kernel extends ConsoleKernel
         })->everyMinute();
         $schedule->command('posts:publish-scheduled')->everyMinute();
         $schedule->command('prompts:process')->everyMinute();
-        $schedule->command('analytics:sync')->everyMinute();
+    $schedule->command('analytics:sync')->everyMinute();
 
     }
 
