@@ -43,7 +43,7 @@ class AdminPanelProvider extends PanelProvider
                 PlatformAccountResource::class, // Đăng ký thủ công PlatformAccountResource
                 MessageResource::class, // Đăng ký thủ công MessageResource
             ])
-            ->viteTheme('resources/css/filament-overrides.css')
+//            ->viteTheme('resources/css/filament-overrides.css')
 
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             // ->pages([
