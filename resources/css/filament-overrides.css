@@ -1,0 +1,10 @@
+/* Đổi màu nền header (topbar) */
+.filament-main-topbar {
+    background-color: #fce7f3 !important; /* Hồng nhạt */
+}
+
+/* Đổi màu text/icon trong header (tuỳ chọn) */
+.filament-main-topbar .fi-avatar {
+    background-color: #000 !important;
+    color: #fff;
+}

@@ -34,7 +34,7 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook('panels::footer', function () {
                 return view('components.chatbot');
             })
-            
+
             ->colors([
                 'primary' => Color::Amber,
             ])
@@ -43,12 +43,14 @@ class AdminPanelProvider extends PanelProvider
                 PlatformAccountResource::class, // Đăng ký thủ công PlatformAccountResource
                 MessageResource::class, // Đăng ký thủ công MessageResource
             ])
+            ->viteTheme('resources/css/filament-overrides.css')
+
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             // ->pages([
             //     Pages\Dashboard::class,
             //     \App\Filament\Pages\GrowthChart::class, // Trang GrowthChart đã có
             // ])
-            
+
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
@@ -65,10 +67,10 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
-            
+
             ->authMiddleware([
                 Authenticate::class,
             ]);
-            
+
     }
 }
