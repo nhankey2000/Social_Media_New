@@ -14,10 +14,7 @@ return [
     */
 
     'name' => env('APP_NAME', 'Laravel'),
-    'providers' => [
-        // Các provider khác...
-        App\Providers\FilamentServiceProvider::class,
-    ],
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment
