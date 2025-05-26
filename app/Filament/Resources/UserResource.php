@@ -22,15 +22,18 @@ use App\Models\User;
 
 class UserResource extends Resource
 {
-    
+
     protected static ?string $model = User::class;
 
-   
+
     protected static ?string $navigationIcon = 'heroicon-o-users';
 
- 
+
     protected static ?string $navigationLabel = 'Quản Lý Người Dùng';
 
+
+
+    protected static ?string $pluralLabel = 'Tài Khoản';
 
     public static function canCreate(): bool
     {
@@ -39,7 +42,7 @@ class UserResource extends Resource
         return Filament::auth()->check() && $user && $user->hasRole('admin');
     }
 
-   
+
     public static function canEdit(Model $record): bool
     {
         $user = Filament::auth()->user();
