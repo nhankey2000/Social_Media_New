@@ -1,0 +1,7 @@
+/* resources/css/filament.css */
+@layer components {
+    .fi-header {
+        background-color: #1e40af; /* Thay đổi màu nền header */
+        color: #ffffff; /* Thay đổi màu chữ trong header */
+    }
+}
