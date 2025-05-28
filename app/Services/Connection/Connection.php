@@ -10,42 +10,69 @@ class Connection
 {
     public function check(PlatformAccount $account)
     {
+        // Kiểm tra các trường bắt buộc
         if (!$account->access_token || !$account->app_id || !$account->app_secret) {
             return false;
         }
 
-        if (strtolower($account->platform->name) !== 'facebook') {
-            return false;
-        }
+        $platformName = strtolower($account->platform->name);
+        $client = new Client([
+            'base_uri' => 'https://graph.facebook.com/v20.0/',
+            'timeout' => 10,
+        ]);
 
         try {
-            $client = new Client();
-            $response = $client->get('https://graph.facebook.com/debug_token', [
-                'query' => [
-                    'input_token' => $account->access_token,
-                    'access_token' => $account->app_id . '|' . $account->app_secret,
-                ],
-                'timeout' => 10,
-            ]);
+            if ($platformName === 'facebook') {
+                // Kiểm tra token cho Facebook
+                $response = $client->get('debug_token', [
+                    'query' => [
+                        'input_token' => $account->access_token,
+                        'access_token' => $account->app_id . '|' . $account->app_secret,
+                    ],
+                ]);
 
-            if ($response->getStatusCode() === 200) {
-                $data = json_decode($response->getBody(), true);
-                
-                if (isset($data['data']['is_valid']) && $data['data']['is_valid']) {
-                    $expiresAt = null;
-                    if (isset($data['data']['expires_at']) && $data['data']['expires_at'] > 0) {
-                        // Chỉ tạo DateTime nếu expires_at lớn hơn 0
-                        $expiresAt = new \DateTime();
-                        $expiresAt->setTimestamp($data['data']['expires_at']);
+                if ($response->getStatusCode() === 200) {
+                    $data = json_decode($response->getBody(), true);
+
+                    if (isset($data['data']['is_valid']) && $data['data']['is_valid']) {
+                        $expiresAt = null;
+                        if (isset($data['data']['expires_at']) && $data['data']['expires_at'] > 0) {
+                            $expiresAt = new \DateTime();
+                            $expiresAt->setTimestamp($data['data']['expires_at']);
+                        }
+                        return [
+                            'success' => true,
+                            'expires_at' => $expiresAt
+                        ];
                     }
-                    
-                    return [
-                        'success' => true,
-                        'expires_at' => $expiresAt
-                    ];
                 }
+
+                return false;
+            } elseif ($platformName === 'instagram') {
+                // Kiểm tra token cho Instagram
+                $response = $client->get('me', [
+                    'query' => [
+                        'fields' => 'id,username',
+                        'access_token' => $account->access_token,
+                    ],
+                ]);
+
+                if ($response->getStatusCode() === 200) {
+                    $data = json_decode($response->getBody(), true);
+
+                    if (isset($data['id']) && isset($data['username'])) {
+                        // Instagram Graph API không trả về expires_at, giả định token dài hạn
+                        return [
+                            'success' => true,
+                            'expires_at' => null // Instagram page access tokens thường không có thời hạn
+                        ];
+                    }
+                }
+
+                return false;
             }
 
+            // Nền tảng không được hỗ trợ
             return false;
         } catch (RequestException $e) {
             return false;
