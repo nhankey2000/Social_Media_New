@@ -54,9 +54,7 @@ return [
     | After changing the path, you should run `php artisan filament:assets`.
     |
     */
-    'vite_theme' => [
-        'build_directory' => 'css/filament.css', // Đường dẫn đến file CSS đã biên dịch
-    ],
+
     'assets_path' => null,
 
     /*

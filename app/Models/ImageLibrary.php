@@ -12,6 +12,8 @@ class ImageLibrary extends Model
         'category_id',
         'item',
         'type',
+        'status',
+        'used_at',
     ];
 
     // protected $casts = [
@@ -22,4 +24,4 @@ class ImageLibrary extends Model
     {
         return $this->belongsTo(Category::class, 'category_id');
     }
-}   
+}
