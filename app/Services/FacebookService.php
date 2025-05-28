@@ -64,6 +64,60 @@ class FacebookService
      * @return array
      * @throws \Exception
      */
+
+
+    public function fetchInstagramAccounts(PlatformAccount $platformAccount, string $appId, string $appSecret): array
+    {
+        try {
+            // Validate access token
+            if (empty($platformAccount->access_token)) {
+                throw new \Exception('Access token không được để trống');
+            }
+
+            // Use Long-Lived User Access Token if necessary
+            $accessToken = $platformAccount->access_token;
+
+            // Fetch Facebook pages with Instagram business account data
+            $response = $this->client->get('me/accounts', [
+                'query' => [
+                    'access_token' => $accessToken,
+                    'fields' => 'id,name,access_token,instagram_business_account{id,username}',
+                ],
+            ]);
+
+            // Check response
+            $data = json_decode($response->getBody()->getContents(), true);
+            if (isset($data['error'])) {
+                throw new \Exception($data['error']['message'] ?? 'Không thể lấy danh sách tài khoản Instagram');
+            }
+
+            $pages = $data['data'] ?? [];
+            $instagramAccounts = [];
+
+            foreach ($pages as $page) {
+                if (isset($page['instagram_business_account'])) {
+                    $instagramAccounts[] = [
+                        'instagram_business_account_id' => $page['instagram_business_account']['id'],
+                        'username' => $page['instagram_business_account']['username'],
+                        'access_token' => $page['access_token'], // Page access token for Instagram API calls
+                    ];
+                }
+            }
+
+            if (empty($instagramAccounts)) {
+                throw new \Exception('Không tìm thấy tài khoản Instagram doanh nghiệp nào được liên kết với các trang Facebook.');
+            }
+
+            return $instagramAccounts;
+
+        } catch (RequestException $e) {
+            $errorMessage = $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
+            throw new \Exception('Lỗi khi lấy danh sách tài khoản Instagram: ' . $errorMessage);
+        } catch (\Exception $e) {
+            throw new \Exception('Lỗi khi lấy danh sách tài khoản Instagram: ' . $e->getMessage());
+        }
+    }
+
     public function getLongLivedUserAccessToken(string $shortLivedToken, string $appId, string $appSecret): string
     {
         try {
@@ -105,6 +159,8 @@ class FacebookService
      * @return array
      * @throws \Exception
      */
+
+
     public function fetchUserPages(PlatformAccount $platformAccount, string $appId, string $appSecret): array
     {
         try {
@@ -154,35 +210,35 @@ class FacebookService
             if (empty($pageId) || empty($pageAccessToken)) {
                 throw new \Exception('Page ID and access token are required.');
             }
-    
+
             // Kiểm tra trạng thái is_active của PlatformAccount dựa trên pageId
             $platformAccount = PlatformAccount::where('page_id', $pageId)->first();
             if (!$platformAccount || !$platformAccount->is_active) {
                 throw new \Exception('Page is inactive or not found.');
             }
-    
+
             $response = $this->client->get("{$pageId}/conversations", [
                 'query' => [
                     'fields' => 'id,participants,messages.limit(20){message,from,created_time,attachments}',
                     'access_token' => $pageAccessToken,
                 ],
             ]);
-    
+
             $data = json_decode($response->getBody()->getContents(), true);
             $conversations = $data['data'] ?? [];
-    
+
             $messages = [];
-    
+
             $videoDir = storage_path('app/public/videos');
             if (!file_exists($videoDir)) {
                 mkdir($videoDir, 0777, true);
             }
-    
+
             foreach ($conversations as $conversation) {
                 $participants = $conversation['participants']['data'] ?? [];
                 $sender = null;
                 $senderId = null;
-    
+
                 foreach ($participants as $participant) {
                     if ($participant['id'] !== $pageId) {
                         $sender = $participant['name'] ?? $participant['id'];
@@ -190,11 +246,11 @@ class FacebookService
                         break;
                     }
                 }
-    
+
                 $conversationMessages = $conversation['messages']['data'] ?? [];
                 foreach ($conversationMessages as $msg) {
                     $attachments = $msg['attachments'] ?? [];
-    
+
                     if (!empty($attachments['data'])) {
                         foreach ($attachments['data'] as &$attachment) {
                             if (
@@ -209,13 +265,13 @@ class FacebookService
                                     $queryParams['access_token'] = $pageAccessToken;
                                     $newQuery = http_build_query($queryParams);
                                     $newUrl = $parsedUrl['scheme'] . '://' . $parsedUrl['host'] . $parsedUrl['path'] . '?' . $newQuery;
-    
+
                                     $localPath = storage_path("app/public/videos/{$msg['id']}.mp4");
                                     $localUrl = asset("storage/videos/{$msg['id']}.mp4");
-    
+
                                     try {
                                         $downloadResponse = $this->client->get($newUrl, ['sink' => $localPath]);
-    
+
                                         if ($downloadResponse->getStatusCode() === 200) {
                                             $attachment['payload']['url'] = $localUrl;
                                         }
@@ -225,7 +281,7 @@ class FacebookService
                             }
                         }
                     }
-    
+
                     $messages[] = [
                         'conversation_id' => $conversation['id'],
                         'message_id' => $msg['id'],
@@ -239,13 +295,13 @@ class FacebookService
                     ];
                 }
             }
-    
+
             return $messages;
         } catch (RequestException $e) {
             $errorMessage = $e->hasResponse()
                 ? $e->getResponse()->getBody()->getContents()
                 : $e->getMessage();
-    
+
             return [];
         } catch (\Exception $e) {
             return [];

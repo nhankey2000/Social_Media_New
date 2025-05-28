@@ -150,15 +150,12 @@ class ProcessScheduledPrompts extends Command
                     // Kiểm tra sự tồn tại của prompt và image
                     $result = null;
                     if (!empty($prompt->prompt)) {
-                        // Nếu prompt tồn tại, sử dụng logic hiện tại
                         $this->info("📝 Xử lý bài viết với prompt: {$prompt->prompt}");
                         $result = $this->generateContentWithChatGPT($prompt->prompt);
                     } elseif (!empty($prompt->image)) {
-                        // Nếu image tồn tại, gọi ChatGPT Mini để phân tích hình ảnh
                         $this->info("🖼️ Xử lý bài viết với hình ảnh: {$prompt->image}");
                         $result = $this->generateContentFromImageWithChatGPTMini($prompt->image);
                     } else {
-                        // Nếu cả prompt và image đều null, bỏ qua
                         throw new \Exception('Cả prompt và image đều trống. Không thể tạo nội dung bài đăng.');
                     }
 
@@ -180,6 +177,7 @@ class ProcessScheduledPrompts extends Command
                     $imageNames = [];
                     $videoPaths = [];
                     $videoNames = [];
+                    $mediaIds = []; // Lưu ID của media để cập nhật trạng thái
 
                     if (!empty($prompt->image_settings) && is_array($prompt->image_settings)) {
                         foreach ($prompt->image_settings as $setting) {
@@ -187,42 +185,36 @@ class ProcessScheduledPrompts extends Command
                             $count = $setting['image_count'] ?? 0;
 
                             if ($categoryId && $count > 0) {
+                                // Lấy media chưa sử dụng
                                 $records = ImageLibrary::where('category_id', $categoryId)
+                                    ->where('status', 'unused')
                                     ->inRandomOrder()
                                     ->take($count)
                                     ->get();
 
                                 if ($records->isNotEmpty()) {
-                                    $mediaItems = $records->filter(function ($record) {
-                                        return !empty($record->item);
-                                    })->toArray();
-
-                                    // Phân loại hình ảnh và video
-                                    foreach ($mediaItems as $media) {
-                                        $type = $media['type'] ?? 'image'; // Mặc định là image nếu không có type
-                                        $filename = $media['item'];
+                                    foreach ($records as $media) {
+                                        $type = $media->type;
+                                        $filename = $media->item;
                                         $directory = $type === 'video' ? 'videos' : 'images';
                                         $relativePath = str_starts_with($filename, "$directory/")
                                             ? $filename
                                             : "$directory/$filename";
                                         $absolutePath = storage_path("app/public/$relativePath");
 
-                                        $mediaInfo = [
-                                            'name' => basename($absolutePath),
-                                            'full_path' => $absolutePath,
-                                            'exists' => file_exists($absolutePath),
-                                        ];
-
-                                        if ($type === 'video') {
-                                            $videoPaths[] = $mediaInfo['full_path'];
-                                            $videoNames[] = $mediaInfo['name'];
-                                        } else {
-                                            $imagePaths[] = $mediaInfo['full_path'];
-                                            $imageNames[] = $mediaInfo['name'];
+                                        if (file_exists($absolutePath)) {
+                                            if ($type === 'video') {
+                                                $videoPaths[] = $absolutePath;
+                                                $videoNames[] = basename($absolutePath);
+                                            } else {
+                                                $imagePaths[] = $absolutePath;
+                                                $imageNames[] = basename($absolutePath);
+                                            }
+                                            $mediaIds[] = $media->id;
                                         }
                                     }
                                 } else {
-                                    $this->warn("⚠️ Không tìm thấy bản ghi image_library phù hợp với category_id = {$categoryId}");
+                                    $this->warn("⚠️ Không tìm thấy media chưa sử dụng trong image_library với category_id = {$categoryId}");
                                 }
                             } else {
                                 $this->warn("⚠️ Thiếu image_category hoặc image_count trong image_settings: " . json_encode($setting));
@@ -244,7 +236,7 @@ class ProcessScheduledPrompts extends Command
                         $videoPaths = array_values($videoPaths);
                         $videoNames = array_values($videoNames);
 
-                        $this->info("🖼️ Đã chọn " . count($imagePaths) . " hình ảnh và " . count($videoPaths) . " video từ thư viện dựa trên image_settings.");
+                        $this->info("🖼️ Đã chọn " . count($imagePaths) . " hình ảnh và " . count($videoPaths) . " video từ image_library (ID: " . implode(', ', $mediaIds) . ").");
                     } else {
                         $this->warn("⚠️ Không có image_settings để lấy media từ image_library.");
                     }
@@ -259,12 +251,12 @@ class ProcessScheduledPrompts extends Command
                         $finalContent .= $content . "\n";
                     }
                     $contactInfo = "🌿MỌI THÔNG TIN CHI TIẾT LIÊN HỆ 🌿\n" .
-                                   "🎯Địa chỉ: Tổ 26, ấp Mỹ Ái, xã Mỹ Khánh, huyện Phong Điền, TP Cần Thơ.\n" .
-                                   "🎯Địa chỉ google map: https://goo.gl/maps/padvdnsZeBHM6UC97\n" .
-                                   "☎️Hotline: 0901 095 709 |  0931 852 113\n" .
-                                   "🔰Zalo hỗ trợ: 078 2 918 222\n" .
-                                   "📧Mail: dulichongde@gmail.com\n" .
-                                   "🌐Website: www.ongde.vn\n";
+                        "🎯Địa chỉ: Tổ 26, ấp Mỹ Ái, xã Mỹ Khánh, huyện Phong Điền, TP Cần Thơ.\n" .
+                        "🎯Địa chỉ google map: https://goo.gl/maps/padvdnsZeBHM6UC97\n" .
+                        "☎️Hotline: 0901 095 709 | 0931 852 113\n" .
+                        "🔰Zalo hỗ trợ: 078 2 918 222\n" .
+                        "📧Mail: dulichongde@gmail.com\n" .
+                        "🌐Website: www.ongde.vn\n";
                     $finalContent .= $contactInfo;
 
                     $fixedHashtags = "#ongde #dulichongde #khudulichongde #langdulichsinhthaiongde #homestay #phimtruong #mientay #VietNam #Thailand #Asian #thienvientruclam #chonoicairang #khachsancantho #dulichcantho #langdulichongde";
@@ -276,7 +268,7 @@ class ProcessScheduledPrompts extends Command
                     }
 
                     // Đăng nội dung lên nền tảng và nhận danh sách bài đăng
-                    $postResults = $this->postToPlatform($prompt, $now, $isScheduledAt, $repeatSchedule, $imagePaths, $videoPaths);
+                    $postResults = $this->postToPlatform($prompt, $now, $isScheduledAt, $repeatSchedule, $imagePaths, $videoPaths, $mediaIds);
 
                     // Kiểm tra nếu không đăng được bài
                     if (empty($postResults)) {
@@ -320,6 +312,7 @@ class ProcessScheduledPrompts extends Command
                                     'content' => $finalContent,
                                     'images' => $imageNames,
                                     'videos' => $videoNames,
+                                    'media_ids' => $mediaIds, // Lưu media_ids
                                 ]);
                                 $this->info("📝 Đã cập nhật thông tin bài đăng scheduled_at vào repeat_scheduled cho platform_account_id: {$platformAccountId}");
                             } else {
@@ -333,29 +326,55 @@ class ProcessScheduledPrompts extends Command
                                     'content' => $finalContent,
                                     'images' => $imageNames,
                                     'videos' => $videoNames,
+                                    'media_ids' => $mediaIds, // Lưu media_ids
                                 ]);
                                 $this->info("📝 Đã tạo bản ghi mới cho scheduled_at trong repeat_scheduled cho platform_account_id: {$platformAccountId}");
                             }
                         }
                     }
 
-                    // Nếu là repeat_scheduled, cập nhật facebook_post_id, platform_account_id và các thông tin bài đăng
-                    if ($isRepeatSchedule && $repeatSchedule) {
+                    // Nếu là repeat_scheduled, cập nhật bản ghi hiện tại cho trang đầu tiên và tạo bản ghi mới cho các trang khác
+                    if ($isRepeatSchedule && $repeatSchedule && $repeatSchedule->exists) {
+                        $isFirstPlatform = true;
                         foreach ($postResults as $postResult) {
                             $facebookPostId = $postResult['facebook_post_id'];
                             $platformAccountId = $postResult['platform_account_id'];
 
-                            $repeatSchedule->update([
-                                'facebook_post_id' => $facebookPostId,
-                                'platform_account_id' => $platformAccountId,
-                                'reposted_at' => $now,
-                                'title' => $title,
-                                'content' => $finalContent,
-                                'images' => $imageNames,
-                                'videos' => $videoNames,
-                            ]);
-                            $this->info("📝 Đã cập nhật thông tin bài đăng vào repeat_scheduled cho platform_account_id: {$platformAccountId}");
+                            if ($isFirstPlatform) {
+                                // Cập nhật trực tiếp bản ghi repeatSchedule hiện tại cho trang đầu tiên
+                                $repeatSchedule->update([
+                                    'facebook_post_id' => $facebookPostId,
+                                    'platform_account_id' => $platformAccountId,
+                                    'reposted_at' => $now,
+                                    'title' => $title,
+                                    'content' => $finalContent,
+                                    'images' => $imageNames,
+                                    'videos' => $videoNames,
+                                    'media_ids' => $mediaIds, // Lưu media_ids
+                                ]);
+                                $this->info("📝 Đã cập nhật thông tin bài đăng vào repeat_scheduled cho platform_account_id: {$platformAccountId}, schedule: {$repeatSchedule->schedule->toDateTimeString()}");
+                                $isFirstPlatform = false;
+                            } else {
+                                // Tạo bản ghi mới cho các trang khác
+                                RepeatScheduled::create([
+                                    'ai_post_prompts_id' => $prompt->id,
+                                    'facebook_post_id' => $facebookPostId,
+                                    'platform_account_id' => $platformAccountId,
+                                    'reposted_at' => $now,
+                                    'schedule' => $repeatSchedule->schedule,
+                                    'title' => $title,
+                                    'content' => $finalContent,
+                                    'images' => $imageNames,
+                                    'videos' => $videoNames,
+                                    'media_ids' => $mediaIds, // Lưu media_ids
+                                ]);
+                                $this->info("📝 Đã tạo bản ghi mới trong repeat_scheduled cho platform_account_id: {$platformAccountId}, schedule: {$repeatSchedule->schedule->toDateTimeString()}");
+                            }
                         }
+                    } elseif ($isRepeatSchedule && (!$repeatSchedule || !$repeatSchedule->exists)) {
+                        $this->error("❌ repeatSchedule không hợp lệ hoặc không tồn tại cho prompt ID: {$prompt->id}");
+                        $prompt->update(['status' => 'pending']);
+                        continue;
                     }
 
                     // Hiển thị thời gian đăng bài tiếp theo (nếu còn)
@@ -425,23 +444,23 @@ class ProcessScheduledPrompts extends Command
 
             // Tạo prompt chi tiết cho ChatGPT với yêu cầu thêm emoji và liên quan đến Làng Du lịch Sinh thái Ông Đề
             $chatGptPrompt = "Bạn là một chuyên gia viết bài quảng cáo trên mạng xã hội cho Làng Du lịch Sinh thái Ông Đề, một điểm đến nổi tiếng tại Cần Thơ với các dịch vụ homestay, phim trường, trải nghiệm văn hóa miền Tây, và thiên nhiên xanh mát. Hãy tạo một bài viết cho nền tảng $platform với các yêu cầu sau:\n" .
-                             "- Chủ đề: $topic. Nội dung bài viết phải liên quan trực tiếp đến Làng Du lịch Sinh thái Ông Đề, quảng bá các dịch vụ, trải nghiệm, hoặc sự kiện tại đây (ví dụ: homestay, phim trường, ẩm thực miền Tây, văn hóa địa phương, cảnh quan thiên nhiên).\n" .
-                             "- Phong cách: $tone\n" .
-                             "- Ngôn ngữ: $language\n" .
-                             "- Độ dài tối đa: $maxLength ký tự\n" .
-                             "- Hashtags: $hashtagsInstruction\n" .
-                             "- Thêm một biểu tượng cảm xúc (emoji) phù hợp ở đầu mỗi câu trong nội dung bài viết (`content`). Emoji phải liên quan đến nội dung hoặc cảm xúc của câu (ví dụ: 🌿 cho thiên nhiên, 😊 cho thân thiện, 🎉 cho kêu gọi hành động, 🏡 cho homestay, 📸 cho phim trường).\n" .
-                             "Trả về bài viết dưới dạng JSON với các trường: `title` (tiêu đề), `content` (nội dung bài viết), và `hashtags` (danh sách hashtag dưới dạng mảng). Đảm bảo:\n" .
-                             "- Nội dung bài viết (`content`) không được chứa bất kỳ thẻ HTML nào (như <p>, <br>, v.v.), chỉ sử dụng văn bản thuần túy.\n" .
-                             "- Nội dung bài viết (`content`) **phải** được ngắt dòng sau mỗi câu hoàn chỉnh (kết thúc bằng dấu chấm '.', dấu chấm than '!', dấu hỏi '?', hoặc dấu ba chấm '...'). Sử dụng ký tự \\n để ngắt dòng. Không để nội dung dính liền trên một dòng.\n" .
-                             "- Mỗi câu trong `content` bắt đầu bằng một emoji, theo sau là một khoảng trắng, rồi mới đến nội dung câu.\n" .
-                             "- Trường `hashtags` phải là một mảng các chuỗi, mỗi chuỗi bắt đầu bằng ký tự # và liên quan đến Làng Du lịch Sinh thái Ông Đề. Nếu không có hashtag, trả về mảng rỗng [].\n" .
-                             "- Chỉ trả về JSON hợp lệ, không thêm bất kỳ nội dung nào khác ngoài JSON. Ví dụ:\n" .
-                             "{\n" .
-                             "  \"title\": \"Khám phá Làng Du lịch Sinh thái Ông Đề\",\n" .
-                             "  \"content\": \"🌿 Chào mừng bạn đến với Làng Du lịch Sinh thái Ông Đề! \\n😊 Trải nghiệm homestay đậm chất miền Tây. \\n🎉 Đặt chỗ ngay hôm nay!\",\n" .
-                             "  \"hashtags\": [\"#LangDuLichOngDe\", \"#MienTay\"]\n" .
-                             "}";
+                "- Chủ đề: $topic. Nội dung bài viết phải liên quan trực tiếp đến Làng Du lịch Sinh thái Ông Đề, quảng bá các dịch vụ, trải nghiệm, hoặc sự kiện tại đây (ví dụ: homestay, phim trường, ẩm thực miền Tây, văn hóa địa phương, cảnh quan thiên nhiên).\n" .
+                "- Phong cách: $tone\n" .
+                "- Ngôn ngữ: $language\n" .
+                "- Độ dài tối đa: $maxLength ký tự\n" .
+                "- Has罢了: $hashtagsInstruction\n" .
+                "- Thêm một biểu tượng cảm xúc (emoji) phù hợp ở đầu mỗi câu trong nội dung bài viết (`content`). Emoji phải liên quan đến nội dung hoặc cảm xúc của câu (ví dụ: 🌿 cho thiên nhiên, 😊 cho thân thiện, 🎉 cho kêu gọi hành động, 🏡 cho homestay, 📸 cho phim trường).\n" .
+                "Trả về bài viết dưới dạng JSON với các trường: `title` (tiêu đề), `content` (nội dung bài viết), và `hashtags` (danh sách hashtag dưới dạng mảng). Đảm bảo:\n" .
+                "- Nội dung bài viết (`content`) không được chứa bất kỳ thẻ HTML nào (như <p>, <br>, v.v.), chỉ sử dụng văn bản thuần túy.\n" .
+                "- Nội dung bài viết (`content`) **phải** được ngắt dòng sau mỗi câu hoàn chỉnh (kết thúc bằng dấu chấm '.', dấu chấm than '!', dấu hỏi '?', hoặc dấu ba chấm '...'). Sử dụng ký tự \\n để ngắt dòng. Không để nội dung dính liền trên một dòng.\n" .
+                "- Mỗi câu trong `content` bắt đầu bằng một emoji, theo sau là một khoảng trắng, rồi mới đến nội dung câu.\n" .
+                "- Trường `hashtags` phải là một mảng các chuỗi, mỗi chuỗi bắt đầu bằng ký tự # và liên quan đến Làng Du lịch Sinh thái Ông Đề. Nếu không có hashtag, trả về mảng rỗng [].\n" .
+                "- Chỉ trả về JSON hợp lệ, không thêm bất kỳ nội dung nào khác ngoài JSON. Ví dụ:\n" .
+                "{\n" .
+                "  \"title\": \"Khám phá Làng Du lịch Sinh thái Ông Đề\",\n" .
+                "  \"content\": \"🌿 Chào mừng bạn đến với Làng Du lịch Sinh thái Ông Đề! \\n😊 Trải nghiệm homestay đậm chất miền Tây. \\n🎉 Đặt chỗ ngay hôm nay!\",\n" .
+                "  \"hashtags\": [\"#LangDuLichOngDe\", \"#MienTay\"]\n" .
+                "}";
 
             // Gọi API OpenAI
             $response = $client->post('https://api.openai.com/v1/chat/completions', [
@@ -540,25 +559,25 @@ class ProcessScheduledPrompts extends Command
 
             // Tạo prompt chi tiết cho ChatGPT Mini với yêu cầu thêm emoji
             $chatGptPrompt = "Bạn là một chuyên gia viết bài quảng cáo trên mạng xã hội cho Làng Du lịch Sinh thái Ông Đề, một điểm đến nổi tiếng tại Cần Thơ với các dịch vụ homestay, phim trường, trải nghiệm văn hóa miền Tây, và thiên nhiên xanh mát. Dựa trên hình ảnh được cung cấp, hãy:\n" .
-                             "1. Phân tích nội dung của hình ảnh (mô tả các yếu tố chính như cảnh vật, đối tượng, màu sắc, cảm xúc, v.v.).\n" .
-                             "2. Tạo một bài viết quảng cáo cho nền tảng $platform với các yêu cầu sau:\n" .
-                             "- Nội dung bài viết phải liên quan trực tiếp đến Làng Du lịch Sinh thái Ông Đề, quảng bá các dịch vụ, trải nghiệm, hoặc sự kiện tại đây (ví dụ: homestay, phim trường, ẩm thực miền Tây, văn hóa địa phương, cảnh quan thiên nhiên). Đảm bảo hình ảnh được mô tả hoặc liên kết với các đặc điểm của Làng Du lịch Sinh thái Ông Đề.\n" .
-                             "- Phong cách: $tone\n" .
-                             "- Ngôn ngữ: $language\n" .
-                             "- Độ dài tối đa: $maxLength ký tự\n" .
-                             "- Tạo từ 2 đến $maxHashtags hashtag phù hợp với nội dung bài viết. Mỗi hashtag phải bắt đầu bằng ký tự #.\n" .
-                             "- Thêm một biểu tượng cảm xúc (emoji) phù hợp ở đầu mỗi câu trong nội dung bài viết (`content`). Emoji phải liên quan đến nội dung hoặc cảm xúc của câu (ví dụ: 🌿 cho thiên nhiên, 😊 cho thân thiện, 🎉 cho kêu gọi hành động, 🏡 cho homestay, 📸 cho phim trường).\n" .
-                             "Trả về bài viết dưới dạng JSON với các trường: `title` (tiêu đề), `content` (nội dung bài viết), và `hashtags` (mảng các hashtag). Đảm bảo:\n" .
-                             "- Nội dung bài viết (`content`) không chứa thẻ HTML, chỉ là văn bản thuần túy.\n" .
-                             "- Nội dung bài viết (`content`) **phải** được ngắt dòng sau mỗi câu hoàn chỉnh bằng \\n. Không thêm hashtag vào `content`.\n" .
-                             "- Mỗi câu trong `content` bắt đầu bằng một emoji, theo sau là một khoảng trắng, rồi mới đến nội dung câu.\n" .
-                             "- Trường `hashtags` là mảng các chuỗi, mỗi chuỗi bắt đầu bằng # và liên quan đến Làng Du lịch Sinh thái Ông Đề (ví dụ: [\"#LangDuLichOngDe\", \"#MienTay\"]). Không để mảng rỗng.\n" .
-                             "- **Chỉ trả về JSON hợp lệ**, không thêm văn bản, ký tự xuống dòng, hoặc markdown (như ```json). Ví dụ:\n" .
-                             "{\n" .
-                             "  \"title\": \"Khám phá Làng Du lịch Sinh thái Ông Đề\",\n" .
-                             "  \"content\": \"🌿 Cảnh sắc thiên nhiên tuyệt đẹp tại Ông Đề. \\n😊 Trải nghiệm homestay đậm chất miền Tây! \\n🎉 Đặt chỗ ngay hôm nay. 😍\",\n" .
-                             "  \"hashtags\": [\"#LangDuLichOngDe\", \"#MienTay\"]\n" .
-                             "}";
+                "1. Phân tích nội dung của hình ảnh (mô tả các yếu tố chính như cảnh vật, đối tượng, màu sắc, cảm xúc, v.v.).\n" .
+                "2. Tạo một bài viết quảng cáo cho nền tảng $platform với các yêu cầu sau:\n" .
+                "- Nội dung bài viết phải liên quan trực tiếp đến Làng Du lịch Sinh thái Ông Đề, quảng bá các dịch vụ, trải nghiệm, hoặc sự kiện tại đây (ví dụ: homestay, phim trường, ẩm thực miền Tây, văn hóa địa phương, cảnh quan thiên nhiên). Đảm bảo hình ảnh được mô tả hoặc liên kết với các đặc điểm của Làng Du lịch Sinh thái Ông Đề.\n" .
+                "- Phong cách: $tone\n" .
+                "- Ngôn ngữ: $language\n" .
+                "- Độ dài tối đa: $maxLength ký tự\n" .
+                "- Tạo từ 2 đến $maxHashtags hashtag phù hợp với nội dung bài viết. Mỗi hashtag phải bắt đầu bằng ký tự #.\n" .
+                "- Thêm một biểu tượng cảm xúc (emoji) phù hợp ở đầu mỗi câu trong nội dung bài viết (`content`). Emoji phải liên quan đến nội dung hoặc cảm xúc của câu (ví dụ: 🌿 cho thiên nhiên, 😊 cho thân thiện, 🎉 cho kêu gọi hành động, 🏡 cho homestay, 📸 cho phim trường).\n" .
+                "Trả về bài viết dưới dạng JSON với các trường: `title` (tiêu đề), `content` (nội dung bài viết), và `hashtags` (mảng các hashtag). Đảm bảo:\n" .
+                "- Nội dung bài viết (`content`) không chứa thẻ HTML, chỉ là văn bản thuần túy.\n" .
+                "- Nội dung bài viết (`content`) **phải** được ngắt dòng sau mỗi câu hoàn chỉnh bằng \\n. Không thêm hashtag vào `content`.\n" .
+                "- Mỗi câu trong `content` bắt đầu bằng một emoji, theo sau là một khoảng trắng, rồi mới đến nội dung câu.\n" .
+                "- Trường `hashtags` là mảng các chuỗi, mỗi chuỗi bắt đầu bằng # và liên quan đến Làng Du lịch Sinh thái Ông Đề (ví dụ: [\"#LangDuLichOngDe\", \"#MienTay\"]). Không để mảng rỗng.\n" .
+                "- **Chỉ trả về JSON hợp lệ**, không thêm văn bản, ký tự xuống dòng, hoặc markdown (như ```json). Ví dụ:\n" .
+                "{\n" .
+                "  \"title\": \"Khám phá Làng Du lịch Sinh thái Ông Đề\",\n" .
+                "  \"content\": \"🌿 Cảnh sắc thiên nhiên tuyệt đẹp tại Ông Đề. \\n😊 Trải nghiệm homestay đậm chất miền Tây! \\n🎉 Đặt chỗ ngay hôm nay. 😍\",\n" .
+                "  \"hashtags\": [\"#LangDuLichOngDe\", \"#MienTay\"]\n" .
+                "}";
 
             // Gọi API OpenAI với model gpt-4o-mini
             $response = $client->post('https://api.openai.com/v1/chat/completions', [
@@ -652,7 +671,7 @@ class ProcessScheduledPrompts extends Command
         }
     }
 
-    protected function postToPlatform($prompt, $now, $isScheduledAt, $repeatSchedule, $imagePaths, $videoPaths)
+    protected function postToPlatform($prompt, $now, $isScheduledAt, $repeatSchedule, $imagePaths, $videoPaths, $mediaIds = [])
     {
         if (!$prompt->platform_id) {
             throw new \Exception("Platform ID is missing for prompt ID: {$prompt->id}");
@@ -660,7 +679,7 @@ class ProcessScheduledPrompts extends Command
 
         // Lấy các tài khoản từ platform_accounts dựa trên platform_id và is_active = true
         $query = PlatformAccount::where('platform_id', $prompt->platform_id)
-            ->where('is_active', true); // Chỉ lấy tài khoản active
+            ->where('is_active', true);
 
         // Nếu post_option là "selected", chỉ lấy các tài khoản trong selected_pages
         $pageIds = [];
@@ -719,12 +738,12 @@ class ProcessScheduledPrompts extends Command
                     $finalContent .= $prompt->generated_content . "\n";
                 }
                 $contactInfo = "🌿MỌI THÔNG TIN CHI TIẾT LIÊN HỆ 🌿\n" .
-                               "🎯Địa chỉ: Tổ 26, ấp Mỹ Ái, xã Mỹ Khánh, huyện Phong Điền, TP Cần Thơ.\n" .
-                               "🎯Địa chỉ google map: https://goo.gl/maps/padvdnsZeBHM6UC97\n" .
-                               "☎️Hotline: 0901 095 709 |  0931 852 113\n" .
-                               "🔰Zalo hỗ trợ: 078 2 918 222\n" .
-                               "📧Mail: dulichongde@gmail.com\n" .
-                               "🌐Website: www.ongde.vn\n";
+                    "🎯Địa chỉ: Tổ 26, ấp Mỹ Ái, xã Mỹ Khánh, huyện Phong Điền, TP Cần Thơ.\n" .
+                    "🎯Địa chỉ google map: https://goo.gl/maps/padvdnsZeBHM6UC97\n" .
+                    "☎️Hotline: 0901 095 709 | 0931 852 113\n" .
+                    "🔰Zalo hỗ trợ: 078 2 918 222\n" .
+                    "📧Mail: dulichongde@gmail.com\n" .
+                    "🌐Website: www.ongde.vn\n";
                 $finalContent .= $contactInfo;
 
                 $fixedHashtags = "#ongde #dulichongde #khudulichongde #langdulichsinhthaiongde #homestay #phimtruong #mientay #VietNam #Thailand #Asian #thienvientruclam #chonoicairang #khachsancantho #dulichcantho #langdulichongde";
@@ -738,13 +757,20 @@ class ProcessScheduledPrompts extends Command
                 // Đăng bài lên Facebook và lấy facebook_post_id
                 $facebookPostId = null;
                 if (!empty($videoPaths)) {
-                    // Nếu có video, ưu tiên đăng video và bỏ qua hình ảnh
                     $this->info("📹 Đăng bài với video lên page {$pageId} ({$account->name})");
                     $facebookPostId = $facebookService->postVideoToPage($pageId, $account->access_token, $finalContent, $videoPaths);
                 } else {
-                    // Nếu không có video, đăng với hình ảnh (hoặc không có media)
                     $this->info("🖼️ Đăng bài với hình ảnh lên page {$pageId} ({$account->name})");
                     $facebookPostId = $facebookService->postToPage($pageId, $account->access_token, $finalContent, $imagePaths);
+                }
+
+                // Nếu là đăng lần đầu, cập nhật trạng thái và used_at trong image_library
+                if ($isScheduledAt && !empty($mediaIds)) {
+                    ImageLibrary::whereIn('id', $mediaIds)->update([
+                        'status' => 'used',
+                        'used_at' => $now,
+                    ]);
+                    $this->info("✅ Đã cập nhật trạng thái thành 'used' và thời gian sử dụng cho " . count($mediaIds) . " media trong image_library cho prompt ID: {$prompt->id}");
                 }
 
                 // Lưu kết quả bài đăng

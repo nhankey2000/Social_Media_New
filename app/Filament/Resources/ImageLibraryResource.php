@@ -13,7 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage; // Đảm bảo import Storage
+use Illuminate\Support\Facades\Storage;
 
 class ImageLibraryResource extends Resource
 {
@@ -27,12 +27,6 @@ class ImageLibraryResource extends Resource
 
     protected static ?string $pluralLabel = 'Thư Viện Media';
 
-    /**
-     * Define the form schema for creating/editing an Image Library entry.
-     *
-     * @param Form $form
-     * @return Form
-     */
     public static function form(Form $form): Form
     {
         return $form
@@ -113,6 +107,8 @@ class ImageLibraryResource extends Resource
                                                     'category_id' => $categoryId,
                                                     'item' => $path,
                                                     'type' => $type,
+                                                    'status' => 'unused', // Mặc định chưa sử dụng
+                                                    'used_at' => null, // Mặc định null
                                                 ]);
                                             }
                                         }
@@ -121,6 +117,25 @@ class ImageLibraryResource extends Resource
                                     })
                                     ->dehydrated(false)
                                     ->extraAttributes(['class' => 'bg-gray-800 text-gray-300']),
+
+                                // Status selection (chỉ hiển thị khi chỉnh sửa)
+                                Forms\Components\Select::make('status')
+                                    ->label('Trạng Thái')
+                                    ->options([
+                                        'unused' => 'Chưa Sử Dụng',
+                                        'used' => 'Đã Sử Dụng',
+                                    ])
+                                    ->disabled(fn ($livewire) => $livewire instanceof \Filament\Resources\Pages\CreateRecord) // Vô hiệu hóa khi tạo mới
+                                    ->helperText('Trạng thái của media. Mặc định là "Chưa Sử Dụng" khi tạo mới.')
+                                    ->extraAttributes(['class' => 'bg-gray-800 text-gray-300']),
+
+                                // Used At (hiển thị chỉ đọc)
+                                Forms\Components\TextInput::make('used_at')
+                                    ->label('Thời Gian Sử Dụng')
+                                    ->disabled()
+                                    ->formatStateUsing(fn ($state) => $state ? $state->format('d/m/Y H:i') : 'Chưa sử dụng')
+                                    ->helperText('Thời gian media được sử dụng trong bài đăng.')
+                                    ->extraAttributes(['class' => 'bg-gray-800 text-gray-300']),
                             ]),
                     ])
                     ->collapsible()
@@ -128,12 +143,6 @@ class ImageLibraryResource extends Resource
             ]);
     }
 
-    /**
-     * Define the table schema for displaying Image Library entries.
-     *
-     * @param Table $table
-     * @return Table
-     */
     public static function table(Table $table): Table
     {
         return $table
@@ -164,7 +173,6 @@ class ImageLibraryResource extends Resource
                         $filePath = null;
 
                         if (is_string($mediaPath) && !empty($mediaPath)) {
-                            // Sử dụng Storage facade trực tiếp
                             $mediaUrl = Storage::disk('public')->url($mediaPath);
                             $filePath = public_path('storage/' . $mediaPath);
                             $fileExists = file_exists($filePath);
@@ -188,6 +196,26 @@ class ImageLibraryResource extends Resource
 
                         return '<img src="https://via.placeholder.com/60" alt="Ảnh mặc định" class="object-cover rounded-lg shadow-sm" style="width: 60px; height: 60px;">';
                     }),
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Trạng Thái')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'unused' => 'success',
+                        'used' => 'warning',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'unused' => 'Chưa Sử Dụng',
+                        'used' => 'Đã Sử Dụng',
+                        default => Str::title($state),
+                    })
+                    ->extraAttributes(['class' => 'text-gray-400']),
+                Tables\Columns\TextColumn::make('used_at')
+                    ->label('Thời Gian Sử Dụng')
+                    ->dateTime('d/m/Y H:i')
+                    ->sortable()
+                    ->placeholder('Chưa sử dụng')
+                    ->extraAttributes(['class' => 'text-gray-400']),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Tạo Lúc')
                     ->dateTime('d/m/Y H:i')
@@ -204,12 +232,37 @@ class ImageLibraryResource extends Resource
                         'image' => 'Hình Ảnh',
                         'video' => 'Video',
                     ]),
+                Tables\Filters\SelectFilter::make('status')
+                    ->label('Trạng Thái')
+                    ->options([
+                        'unused' => 'Chưa Sử Dụng',
+                        'used' => 'Đã Sử Dụng',
+                    ]),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->label('Sửa')
                     ->icon('heroicon-o-pencil')
                     ->color('primary'),
+                Tables\Actions\Action::make('reuse')
+                    ->label('Tái Sử Dụng')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Tái Sử Dụng Media')
+                    ->modalDescription('Bạn có chắc chắn muốn đặt lại trạng thái của media này thành "Chưa Sử Dụng" để sử dụng lại?')
+                    ->modalSubmitActionLabel('Xác Nhận')
+                    ->action(function ($record) {
+                        $record->update([
+                            'status' => 'unused',
+                            'used_at' => null,
+                        ]);
+                        \Filament\Notifications\Notification::make()
+                            ->title('Media đã được đặt lại thành công!')
+                            ->body('Media này giờ có thể được sử dụng lại.')
+                            ->success()
+                            ->send();
+                    }),
                 Tables\Actions\DeleteAction::make()
                     ->label('Xóa')
                     ->icon('heroicon-o-trash')
@@ -228,11 +281,6 @@ class ImageLibraryResource extends Resource
             ]);
     }
 
-    /**
-     * Define the relations for the Image Library resource.
-     *
-     * @return array
-     */
     public static function getRelations(): array
     {
         return [
@@ -240,11 +288,6 @@ class ImageLibraryResource extends Resource
         ];
     }
 
-    /**
-     * Define the pages for the Image Library resource.
-     *
-     * @return array
-     */
     public static function getPages(): array
     {
         return [
