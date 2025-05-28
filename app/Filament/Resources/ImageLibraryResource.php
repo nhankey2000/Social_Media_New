@@ -170,32 +170,23 @@ class ImageLibraryResource extends Resource
                         $mediaType = strtolower($record->type);
                         $mediaUrl = null;
                         $fileExists = false;
-                        $filePath = null;
 
                         if (is_string($mediaPath) && !empty($mediaPath)) {
                             $mediaUrl = Storage::disk('public')->url($mediaPath);
-                            $filePath = public_path('storage/' . $mediaPath);
-                            $fileExists = file_exists($filePath);
+                            $fileExists = Storage::disk('public')->exists($mediaPath); // ✅ DÙNG CÁCH NÀY
                         }
-
-                        \Illuminate\Support\Facades\Log::info('Media display debug', [
-                            'mediaPath' => $mediaPath,
-                            'mediaType' => $mediaType,
-                            'mediaUrl' => $mediaUrl,
-                            'fileExists' => $fileExists,
-                            'filePath' => $filePath,
-                        ]);
 
                         if ($mediaType === 'image' && $mediaUrl && $fileExists) {
                             return '<img src="' . $mediaUrl . '" alt="Xem trước ảnh" class="object-cover rounded-lg shadow-sm" style="width: 60px; height: 60px;">';
                         } elseif ($mediaType === 'video' && $mediaUrl && $fileExists) {
-                            return '<video width="60" height="60" controls class="object-cover rounded-lg shadow-sm"><source src="' . $mediaUrl . '" type="video/mp4">Trình duyệt của bạn không hỗ trợ thẻ video.</video>';
+                            return '<video width="60" height="60" controls class="object-cover rounded-lg shadow-sm"><source src="' . $mediaUrl . '" type="video/mp4">Trình duyệt không hỗ trợ.</video>';
                         } elseif ($mediaUrl && !$fileExists) {
                             return '<span class="text-red-500 text-xs">File không tồn tại: ' . $mediaPath . '</span>';
                         }
 
                         return '<img src="https://via.placeholder.com/60" alt="Ảnh mặc định" class="object-cover rounded-lg shadow-sm" style="width: 60px; height: 60px;">';
-                    }),
+                    })
+                ,
                 Tables\Columns\TextColumn::make('status')
                     ->label('Trạng Thái')
                     ->badge()
