@@ -62,6 +62,7 @@ class RepeatScheduledResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('schedule', 'desc') // Thêm sắp xếp mặc định theo schedule giảm dần
             ->columns([
                 TextColumn::make('platform_account_id')
                     ->label('Tên Trang')
@@ -119,16 +120,16 @@ class RepeatScheduledResource extends Resource
                         }
                         return [];
                     }),
-                    TextColumn::make('aiPostPrompt.user.name')
-                ->label('Tác giả')
-                ->sortable()
-                ->searchable()
-                ->default('Không xác định')
-                ->formatStateUsing(function ($record) {
-                    return $record->aiPostPrompt && $record->aiPostPrompt->user
-                        ? $record->aiPostPrompt->user->name
-                        : 'Không xác định';
-                }),
+                TextColumn::make('aiPostPrompt.user.name')
+                    ->label('Tác giả')
+                    ->sortable()
+                    ->searchable()
+                    ->default('Không xác định')
+                    ->formatStateUsing(function ($record) {
+                        return $record->aiPostPrompt && $record->aiPostPrompt->user
+                            ? $record->aiPostPrompt->user->name
+                            : 'Không xác định';
+                    }),
             ])
             ->filters([
                 // Có thể thêm bộ lọc nếu cần
@@ -256,4 +257,4 @@ class RepeatScheduledResource extends Resource
             'edit' => Pages\EditRepeatScheduled::route('/{record}/edit'),
         ];
     }
-}   
+}
