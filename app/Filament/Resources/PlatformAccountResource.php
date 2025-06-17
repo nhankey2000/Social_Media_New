@@ -11,6 +11,8 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\ActionGroup;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -18,89 +20,62 @@ class PlatformAccountResource extends Resource
 {
     protected static ?string $model = PlatformAccount::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
+    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
     protected static ?string $navigationGroup = 'Quản Lý Tài Khoản';
-    protected static ?string $label = 'Danh Sách Page';
-    protected static ?string $pluralLabel = 'Danh Sách Page';
-    public static function canCreate(): bool
+
+    protected static ?string $navigationLabel = 'Danh Sách Page & Tài Khoản';
+
+    protected static ?string $pluralLabel = 'Danh Sách Page & Tài Khoản';
+
+    protected static ?string $recordTitleAttribute = 'name';
+
+    public static function canEdit($record): bool
     {
         return false;
     }
+
+    public static function canDelete($record): bool
+    {
+        return true;
+    }
+
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                // Forms\Components\Section::make('Thông Tin Cơ Bản')
-                //     ->description('Cung cấp thông tin cơ bản về tài khoản nền tảng.')
-                //     ->schema([
-                //         Forms\Components\Grid::make(2)
-                //             ->schema([
-                //                 Forms\Components\Select::make('platform_id')
-                //                     ->label('Nền Tảng')
-                //                     ->relationship('platform', 'name')
-                //                     ->required()
-                //                     ->placeholder('Chọn nền tảng'),
+                Forms\Components\Section::make('Thông Tin Tài Khoản')
+                    ->description('Chi tiết về tài khoản mạng xã hội được quản lý')
+                    ->icon('heroicon-o-user-circle')
+                    ->schema([
+                        Forms\Components\Grid::make(2)
+                            ->schema([
+                                Forms\Components\TextInput::make('name')
+                                    ->label('Tên Tài Khoản/Page')
+                                    ->required()
+                                    ->maxLength(255),
 
-                //                 Forms\Components\TextInput::make('name')
-                //                     ->label('Tên Tài Khoản')
-                //                     ->required()
-                //                     ->maxLength(255)
-                //                     ->extraAttributes(['class' => 'bg-gray-800 text-gray-300']),
-                //             ]),
-                //     ])
-                //     ->collapsible()
-                //     ->extraAttributes(['class' => 'bg-gray-900 border border-gray-700']),
+                                Forms\Components\Select::make('platform_id')
+                                    ->label('Nền Tảng')
+                                    ->relationship('platform', 'name')
+                                    ->required(),
+                            ]),
 
-                // Forms\Components\Section::make('Thông Tin API')
-                //     ->description('Nhập các thông tin API cần thiết để kết nối với nền tảng.')
-                //     ->schema([
-                //         Forms\Components\Grid::make(2)
-                //             ->schema([
-                //                 Forms\Components\TextInput::make('app_id')
-                //                     ->label('App ID')
-                //                     ->maxLength(255),
+                        Forms\Components\TextInput::make('page_id')
+                            ->label('Page/Account ID')
+                            ->columnSpanFull(),
 
-                //                 Forms\Components\TextInput::make('app_secret')
-                //                     ->label('App Secret')
-                //                     ->maxLength(255),
+                        Forms\Components\Textarea::make('access_token')
+                            ->label('Access Token')
+                            ->rows(4)
+                            ->columnSpanFull(),
 
-                //                 Forms\Components\TextInput::make('access_token')
-                //                     ->label('Access Token')
-                //                     ->maxLength(255),
-
-                //                 Forms\Components\TextInput::make('api_key')
-                //                     ->label('API Key')
-                //                     ->maxLength(255),
-
-                //                 Forms\Components\TextInput::make('api_secret')
-                //                     ->label('API Secret')
-                //                     ->maxLength(255),
-
-                //                 Forms\Components\TextInput::make('page_id')
-                //                     ->label('Page ID')
-                //                     ->maxLength(255),
-                //             ]),
-                //     ])
-                //     ->collapsible()
-                //     ->extraAttributes(['class' => 'bg-gray-900 border border-gray-700']),
-
-                // Forms\Components\Section::make('Thông Tin Bổ Sung')
-                //     ->description('Cung cấp dữ liệu bổ sung và thời gian hết hạn.')
-                //     ->schema([
-                //         Forms\Components\Grid::make(2)
-                //             ->schema([
-                //                 Forms\Components\KeyValue::make('extra_data')
-                //                     ->label('Dữ Liệu Bổ Sung')
-                //                     ->columnSpanFull(),
-
-                //                 Forms\Components\DateTimePicker::make('expires_at')
-                //                     ->label('Ngày Hết Hạn')
-                //                     ->nullable()
-                //                     ->displayFormat('d/m/Y H:i'),
-                //             ]),
-                //     ])
-                //     ->collapsible()
-                //     ->extraAttributes(['class' => 'bg-gray-900 border border-gray-700']),
+                        Forms\Components\Toggle::make('is_active')
+                            ->label('Trạng Thái Hoạt Động')
+                            ->default(true),
+                    ])
+                    ->collapsible()
+                    ->collapsed(false),
             ]);
     }
 
@@ -111,29 +86,49 @@ class PlatformAccountResource extends Resource
                 Tables\Columns\TextColumn::make('platform.name')
                     ->label('Nền Tảng')
                     ->sortable()
-                    ->extraAttributes(['class' => 'font-semibold text-gray-200']),
-                Tables\Columns\TextColumn::make('name')
-                    ->label('Tên Tài Khoản')
-                    ->limit(20)
                     ->searchable()
-                    ->extraAttributes(['class' => 'text-gray-300']),
+                    ->badge()
+                    ->color('primary'),
+
+                Tables\Columns\TextColumn::make('name')
+                    ->label('Tên Tài Khoản/Page')
+                    ->limit(30)
+                    ->searchable()
+                    ->sortable()
+                    ->weight('bold')
+                    ->copyable()
+                    ->copyMessage('Đã sao chép tên!'),
+
+                Tables\Columns\TextColumn::make('page_id')
+                    ->label('Page ID')
+                    ->limit(15)
+                    ->fontFamily('mono')
+                    ->copyable()
+                    ->copyMessage('Đã sao chép Page ID!')
+                    ->badge()
+                    ->color('secondary')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('expires_at')
-                    ->label('Ngày Hết Hạn')
-                    ->dateTime('d/m/Y H:i')
+                    ->label('Hết Hạn Token')
                     ->sortable()
                     ->formatStateUsing(function ($state) {
-                        Log::info('Expires_at state in PlatformAccountResource', [
-                            'state' => $state,
-                            'type' => gettype($state),
-                            'is_carbon' => $state instanceof \Carbon\Carbon,
-                        ]);
-
                         try {
                             if ($state) {
                                 $date = $state instanceof \Carbon\Carbon
                                     ? $state
                                     : \Carbon\Carbon::parse($state);
-                                return $date->format('d/m/Y H:i');
+
+                                $now = \Carbon\Carbon::now();
+                                $diffInDays = $now->diffInDays($date, false);
+
+                                if ($diffInDays < 0) {
+                                    return 'Đã hết hạn';
+                                } elseif ($diffInDays <= 7) {
+                                    return $date->format('d/m/Y H:i');
+                                } else {
+                                    return $date->format('d/m/Y H:i');
+                                }
                             }
                             return 'Vô thời hạn';
                         } catch (\Exception $e) {
@@ -144,102 +139,157 @@ class PlatformAccountResource extends Resource
                             return 'Không hợp lệ';
                         }
                     })
-                    ->extraAttributes(['class' => 'text-gray-400']),
-                // Cột Trạng thái với toggle switch
+                    ->badge()
+                    ->color(function ($state) {
+                        if (!$state) return 'success';
+                        try {
+                            $date = $state instanceof \Carbon\Carbon ? $state : \Carbon\Carbon::parse($state);
+                            $diffInDays = \Carbon\Carbon::now()->diffInDays($date, false);
+                            if ($diffInDays < 0) return 'danger';
+                            if ($diffInDays <= 7) return 'warning';
+                            return 'success';
+                        } catch (\Exception $e) {
+                            return 'danger';
+                        }
+                    }),
+
                 Tables\Columns\ToggleColumn::make('is_active')
-                    ->label('Trạng Thái')
+                    ->label('Hoạt Động')
                     ->sortable()
                     ->alignCenter()
-                    ->extraAttributes(['class' => 'custom-toggle text-gray-400'])
-                    ->onColor('success') // Màu xanh khi bật
-                    ->offColor('gray')  // Màu xám khi tắt (gần giống trắng, cần CSS để tùy chỉnh thành trắng)
-                    ->action(function (PlatformAccount $record, $state) {
-                        $record->is_active = $state; // Cập nhật trạng thái
-                        $record->save();
-
-                        \Filament\Notifications\Notification::make()
-                            ->title($state ? 'Đã Kích Hoạt' : 'Đã Tắt')
-                            ->body('Trạng thái tài khoản ' . $record->name . ' đã được cập nhật.')
+                    ->onColor('success')
+                    ->offColor('gray')
+                    ->afterStateUpdated(function ($record, $state) {
+                        Notification::make()
+                            ->title($state ? 'Đã Kích Hoạt!' : 'Đã Tắt!')
+                            ->body('Trạng thái tài khoản "' . $record->name . '" đã được cập nhật.')
                             ->success()
+                            ->duration(3000)
                             ->send();
                     }),
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Ngày Tạo')
                     ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
-                    ->extraAttributes(['class' => 'text-gray-400']),
+                    ->badge()
+                    ->color('gray'),
             ])
             ->filters([
-                // Có thể thêm bộ lọc nếu cần
+                Tables\Filters\SelectFilter::make('platform_id')
+                    ->label('Lọc theo nền tảng')
+                    ->relationship('platform', 'name')
+                    ->multiple()
+                    ->preload(),
+
+                Tables\Filters\Filter::make('is_active')
+                    ->label('Đang hoạt động')
+                    ->query(fn($query) => $query->where('is_active', true)),
+
+                Tables\Filters\Filter::make('token_expiring_soon')
+                    ->label('Token sắp hết hạn')
+                    ->query(fn($query) => $query->where('expires_at', '<=', now()->addDays(7))
+                        ->whereNotNull('expires_at')),
+
+                Tables\Filters\Filter::make('token_expired')
+                    ->label('Token đã hết hạn')
+                    ->query(fn($query) => $query->where('expires_at', '<', now())
+                        ->whereNotNull('expires_at')),
             ])
             ->actions([
-                Action::make('check_connection')
-                    ->label('Kiểm Tra Kết Nối')
-                    ->icon('heroicon-o-wifi')
-                    ->color('success')
-                    ->action(function (PlatformAccount $record) {
-                        $connectionService = new Connection();
-                        $result = $connectionService->check($record);
+                ActionGroup::make([
+                    Action::make('check_connection')
+                        ->label('Kiểm Tra Kết Nối')
+                        ->icon('heroicon-o-wifi')
+                        ->color('success')
+                        ->action(function (PlatformAccount $record) {
+                            try {
+                                $connectionService = new Connection();
+                                $result = $connectionService->check($record);
 
-                        if ($result && is_array($result) && $result['success']) {
-                            if (isset($result['expires_at']) && $result['expires_at'] instanceof \DateTime) {
-                                $record->expires_at = $result['expires_at'];
-                                $record->save();
+                                if ($result && is_array($result) && $result['success']) {
+                                    if (isset($result['expires_at']) && $result['expires_at'] instanceof \DateTime) {
+                                        $record->expires_at = $result['expires_at'];
+                                        $record->save();
 
-                                \Filament\Notifications\Notification::make()
-                                    ->title('Kết Nối Thành Công')
-                                    ->body('Ngày hết hạn token: ' . $record->expires_at->format('d/m/Y H:i:s'))
-                                    ->success()
-                                    ->send();
-                            } else {
-                                $record->expires_at = null;
-                                $record->save();
+                                        Notification::make()
+                                            ->title('Kết Nối Thành Công!')
+                                            ->body('Token hết hạn: ' . $record->expires_at->format('d/m/Y H:i:s'))
+                                            ->success()
+                                            ->duration(5000)
+                                            ->send();
+                                    } else {
+                                        $record->expires_at = null;
+                                        $record->save();
 
-                                \Filament\Notifications\Notification::make()
-                                    ->title('Kết Nối Thành Công')
-                                    ->body('Token vô thời hạn')
-                                    ->success()
+                                        Notification::make()
+                                            ->title('Kết Nối Thành Công!')
+                                            ->body('Token vô thời hạn - Kết nối ổn định.')
+                                            ->success()
+                                            ->duration(5000)
+                                            ->send();
+                                    }
+                                } else {
+                                    Notification::make()
+                                        ->title('Kết Nối Thất Bại!')
+                                        ->body('Không thể kết nối đến API. Vui lòng kiểm tra token.')
+                                        ->danger()
+                                        ->duration(8000)
+                                        ->send();
+                                }
+                            } catch (\Exception $e) {
+                                Log::error('Connection check failed', [
+                                    'record_id' => $record->id,
+                                    'error' => $e->getMessage(),
+                                ]);
+
+                                Notification::make()
+                                    ->title('Lỗi Hệ Thống!')
+                                    ->body('Lỗi khi kiểm tra kết nối: ' . $e->getMessage())
+                                    ->danger()
+                                    ->duration(10000)
                                     ->send();
                             }
-                        } else {
-                            \Filament\Notifications\Notification::make()
-                                ->title('Kết Nối Thất Bại')
-                                ->danger()
-                                ->send();
-                        }
-                    }),
-                Action::make('view_analytics')
-                    ->label('Xem Thống Kê')
-                    ->icon('heroicon-o-chart-bar')
-                    ->color('primary')
-                    ->url(fn (PlatformAccount $record): string => static::getUrl('analytics', ['record' => $record]))
-                    ->visible(fn (PlatformAccount $record): bool => $record->platform_id == 1),
-//                Action::make('view_chart')
-//                    ->label('Xem Biểu Đồ')
-//                    ->icon('heroicon-o-arrow-trending-up')
-//                    ->color('info')
-//                    ->url(fn (PlatformAccount $record): string => static::getUrl('chart', ['record' => $record]))
-//                    ->visible(fn (PlatformAccount $record): bool => $record->platform_id == 1),
-                Tables\Actions\EditAction::make()
-                    ->label('Sửa')
-                    ->icon('heroicon-o-pencil')
-                    ->color('primary'),
-                Tables\Actions\DeleteAction::make()
-                    ->label('Xóa')
-                    ->icon('heroicon-o-trash')
-                    ->color('danger')
-                    ->requiresConfirmation(),
+                        }),
+
+                    Action::make('view_analytics')
+                        ->label('Xem Thống Kê')
+                        ->icon('heroicon-o-chart-bar')
+                        ->color('primary')
+                        ->url(fn (PlatformAccount $record): string => static::getUrl('analytics', ['record' => $record]))
+                        ->visible(fn (PlatformAccount $record): bool => $record->platform_id == 1)
+                        ->openUrlInNewTab(),
+
+                    Tables\Actions\ViewAction::make()
+                        ->label('Xem Chi Tiết')
+                        ->icon('heroicon-o-eye')
+                        ->color('info')
+                        ->slideOver()
+                        ->modalWidth('2xl'),
+
+                    Tables\Actions\DeleteAction::make()
+                        ->label('Xóa Tài Khoản')
+                        ->icon('heroicon-o-trash')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->modalHeading('Xóa Tài Khoản')
+                        ->modalDescription('Bạn có chắc chắn muốn xóa tài khoản này? Hành động này không thể hoàn tác.'),
+
+                ])->tooltip('Tùy chọn')
+                    ->icon('heroicon-o-ellipsis-vertical')
+                    ->size('sm')
+                    ->color('gray'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\BulkAction::make('check_all_connections')
-                        ->label('Kiểm Tra Kết Nối Tất Cả')
+                        ->label('Kiểm Tra Kết Nối Hàng Loạt')
                         ->icon('heroicon-o-wifi')
                         ->color('success')
                         ->action(function (Collection $records) {
                             $successCount = 0;
-                            $errorMessages = [];
+                            $failureCount = 0;
 
                             $connectionService = new Connection();
 
@@ -252,73 +302,100 @@ class PlatformAccountResource extends Resource
                                             $record->expires_at = $result['expires_at'];
                                             $record->save();
                                             $successCount++;
-                                            Log::info("Kết nối thành công cho tài khoản {$record->name}", [
-                                                'expires_at' => $record->expires_at->format('d/m/Y H:i:s'),
-                                            ]);
                                         } else {
                                             $record->expires_at = null;
                                             $record->save();
                                             $successCount++;
-                                            Log::info("Kết nối thành công cho tài khoản {$record->name}", [
-                                                'expires_at' => 'Vô thời hạn',
-                                            ]);
                                         }
                                     } else {
-                                        $errorMessages[] = "Tài khoản {$record->name}: Kết nối thất bại.";
-                                        Log::warning("Kết nối thất bại cho tài khoản {$record->name}");
+                                        $failureCount++;
                                     }
                                 } catch (\Exception $e) {
-                                    $errorMessages[] = "Tài khoản {$record->name}: Lỗi - {$e->getMessage()}";
+                                    $failureCount++;
                                     Log::error("Lỗi khi kiểm tra kết nối cho tài khoản {$record->name}", [
                                         'error' => $e->getMessage(),
                                     ]);
                                 }
                             }
 
-                            if ($successCount > 0) {
-                                \Filament\Notifications\Notification::make()
-                                    ->title('Kết Nối Thành Công')
-                                    ->body("Đã kiểm tra thành công {$successCount} tài khoản.")
-                                    ->success()
-                                    ->send();
-                            }
-
-                            if (!empty($errorMessages)) {
-                                \Filament\Notifications\Notification::make()
-                                    ->title('Có Lỗi Xảy Ra')
-                                    ->body(implode("\n", $errorMessages))
-                                    ->danger()
-                                    ->send();
-                            }
-
-                            if ($successCount === 0 && empty($errorMessages)) {
-                                \Filament\Notifications\Notification::make()
-                                    ->title('Không Có Tài Khoản Nào Được Kiểm Tra')
-                                    ->body('Vui lòng chọn ít nhất một tài khoản để kiểm tra.')
-                                    ->warning()
-                                    ->send();
-                            }
+                            Notification::make()
+                                ->title('Kiểm Tra Hoàn Tất!')
+                                ->body("Thành công: {$successCount} | Thất bại: {$failureCount}")
+                                ->success()
+                                ->duration(8000)
+                                ->send();
                         })
                         ->deselectRecordsAfterCompletion(),
+
+                    Tables\Actions\BulkAction::make('activate_all')
+                        ->label('Kích Hoạt Tất Cả')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->action(function (Collection $records) {
+                            $records->each(function ($record) {
+                                $record->update(['is_active' => true]);
+                            });
+
+                            Notification::make()
+                                ->title('Kích Hoạt Thành Công!')
+                                ->body('Đã kích hoạt ' . $records->count() . ' tài khoản.')
+                                ->success()
+                                ->duration(5000)
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
+                    Tables\Actions\BulkAction::make('deactivate_all')
+                        ->label('Tắt Tất Cả')
+                        ->icon('heroicon-o-x-circle')
+                        ->color('warning')
+                        ->action(function (Collection $records) {
+                            $records->each(function ($record) {
+                                $record->update(['is_active' => false]);
+                            });
+
+                            Notification::make()
+                                ->title('Tắt Thành Công!')
+                                ->body('Đã tắt ' . $records->count() . ' tài khoản.')
+                                ->warning()
+                                ->duration(5000)
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
                     Tables\Actions\DeleteBulkAction::make()
-                        ->label('Xóa Tất Cả')
+                        ->label('Xóa Tất Cả Đã Chọn')
                         ->modalHeading('Xóa Các Tài Khoản Đã Chọn')
                         ->modalSubheading('Bạn có chắc chắn muốn xóa các tài khoản này? Hành động này sẽ không thể hoàn tác.')
-                        ->modalButton('Xác Nhận')
+                        ->modalButton('Xác Nhận Xóa')
                         ->color('danger')
                         ->deselectRecordsAfterCompletion(),
-                ])->label('Tùy Chọn'),
-            ]);
+
+                ])->label('Hành Động Hàng Loạt'),
+            ])
+            ->emptyStateHeading('Chưa có tài khoản nào')
+            ->emptyStateDescription('Các tài khoản/page được quản lý sẽ xuất hiện ở đây sau khi được thêm từ Facebook App!')
+            ->emptyStateIcon('heroicon-o-rectangle-stack')
+            ->striped()
+            ->defaultSort('created_at', 'desc');
     }
 
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListPlatformAccounts::route('/'),
-            // 'create' => Pages\CreatePlatformAccount::route('/create'),
-            'edit' => Pages\EditPlatformAccount::route('/{record}/edit'),
             'analytics' => Pages\AnalyticsPlatformAccount::route('/{record}/analytics'),
-//            'chart' => Pages\ChartPlatformAccount::route('/{record}/chart'),
         ];
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $activeCount = static::getModel()::where('is_active', true)->count();
+        return $activeCount ?: null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'success';
     }
 }

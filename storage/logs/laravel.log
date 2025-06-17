@@ -12042,3 +12042,6 @@ Khám phá vẻ đẹp lịch sử và truyền thống của làng quê Ông Đ
 #35 C:\\Users\\PC\\Social_Media_New\\artisan(16): Illuminate\\Foundation\\Application->handleCommand(Object(Symfony\\Component\\Console\\Input\\ArgvInput))
 #36 {main}
 "} 
+[2025-06-14 07:52:12] local.INFO: Chart Data: {"labels":["2025-06-07","2025-06-08","2025-06-09","2025-06-10","2025-06-11","2025-06-12","2025-06-13","2025-06-14"],"followersData":[0,0,0,0,0,0,0,0],"impressionsData":[0,0,0,0,0,0,0,0],"engagementsData":[0,0,0,0,0,0,0,0],"reachData":[0,0,0,0,0,0,0,0],"linkClicksData":[0,0,0,0,0,0,0,0]} 
+[2025-06-14 07:52:12] local.INFO: Chart Data: {"labels":["2025-06-07","2025-06-08","2025-06-09","2025-06-10","2025-06-11","2025-06-12","2025-06-13","2025-06-14"],"followersData":[0,0,0,0,0,0,0,0],"impressionsData":[0,0,0,0,0,0,0,0],"engagementsData":[0,0,0,0,0,0,0,0],"reachData":[0,0,0,0,0,0,0,0],"linkClicksData":[0,0,0,0,0,0,0,0]} 
+[2025-06-14 07:52:12] local.INFO: Chart Data: {"labels":["2025-06-07","2025-06-08","2025-06-09","2025-06-10","2025-06-11","2025-06-12","2025-06-13","2025-06-14"],"followersData":[0,0,0,0,0,0,0,0],"impressionsData":[0,0,0,0,0,0,0,0],"engagementsData":[0,0,0,0,0,0,0,0],"reachData":[0,0,0,0,0,0,0,0],"linkClicksData":[0,0,0,0,0,0,0,0]} 
