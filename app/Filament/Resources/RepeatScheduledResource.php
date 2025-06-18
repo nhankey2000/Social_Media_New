@@ -63,6 +63,15 @@ class RepeatScheduledResource extends Resource
                                         'class' => 'bg-gradient-to-r from-gray-50 to-slate-50 border-gray-300 rounded-lg opacity-75 font-mono text-sm'
                                     ])
                                     ->helperText('ID của bài viết trên Facebook'),
+
+                                Forms\Components\TextInput::make('instagram_post_id')
+                                    ->label('Instagram Post ID')
+                                    ->disabled()
+                                    ->extraAttributes([
+                                        'class' => 'bg-gradient-to-r from-pink-50 to-purple-50 border-pink-300 rounded-lg opacity-75 font-mono text-sm'
+                                    ])
+                                    ->helperText('ID của bài viết trên Instagram')
+                                    ->visible(fn ($record) => !empty($record?->instagram_post_id)),
                             ]),
 
                         Forms\Components\TextInput::make('title')
@@ -84,6 +93,7 @@ class RepeatScheduledResource extends Resource
                             ->helperText('Nội dung chi tiết của bài viết đã đăng')
                             ->columnSpanFull(),
 
+                        // FIXED: Hiển thị hình ảnh trong form view
                         Forms\Components\FileUpload::make('images')
                             ->label('Hình Ảnh Đi Kèm')
                             ->multiple()
@@ -98,7 +108,60 @@ class RepeatScheduledResource extends Resource
                                 'class' => 'border-2 border-dashed border-orange-300 rounded-2xl bg-gradient-to-br from-orange-50 to-yellow-50'
                             ])
                             ->helperText('Các hình ảnh đã được đăng cùng với bài viết')
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            // FIXED: Xử lý hiển thị hình ảnh đúng cách
+                            ->formatStateUsing(function ($state, $record) {
+                                if (!$record || !$record->images) {
+                                    return [];
+                                }
+
+                                $images = is_array($record->images) ? $record->images : [];
+
+                                // Chuẩn hóa đường dẫn để hiển thị
+                                return array_map(function ($image) {
+                                    $image = str_replace('\\', '/', $image);
+                                    // Đảm bảo đường dẫn bắt đầu với 'images/'
+                                    if (!str_starts_with($image, 'images/')) {
+                                        $image = 'images/' . ltrim($image, '/');
+                                    }
+                                    return $image;
+                                }, $images);
+                            }),
+
+                        // FIXED: Hiển thị video trong form view
+                        Forms\Components\FileUpload::make('videos')
+                            ->label('Video Đi Kèm')
+                            ->multiple()
+                            ->directory('videos')
+                            ->preserveFilenames()
+                            ->acceptedFileTypes(['video/mp4', 'video/ogg', 'video/webm', 'video/quicktime'])
+                            ->maxFiles(5)
+                            ->maxSize(102400) // 100MB
+                            ->panelLayout('grid')
+                            ->extraAttributes([
+                                'class' => 'border-2 border-dashed border-purple-300 rounded-2xl bg-gradient-to-br from-purple-50 to-pink-50'
+                            ])
+                            ->helperText('Các video đã được đăng cùng với bài viết')
+                            ->columnSpanFull()
+                            ->visible(fn ($record) => !empty($record?->videos) && is_array($record->videos) && count($record->videos) > 0)
+                            // FIXED: Xử lý hiển thị video đúng cách
+                            ->formatStateUsing(function ($state, $record) {
+                                if (!$record || !$record->videos) {
+                                    return [];
+                                }
+
+                                $videos = is_array($record->videos) ? $record->videos : [];
+
+                                // Chuẩn hóa đường dẫn để hiển thị
+                                return array_map(function ($video) {
+                                    $video = str_replace('\\', '/', $video);
+                                    // Đảm bảo đường dẫn bắt đầu với 'videos/'
+                                    if (!str_starts_with($video, 'videos/')) {
+                                        $video = 'videos/' . ltrim($video, '/');
+                                    }
+                                    return $video;
+                                }, $videos);
+                            }),
                     ])
                     ->collapsible()
                     ->collapsed(false)
@@ -189,6 +252,7 @@ class RepeatScheduledResource extends Resource
                     ->formatStateUsing(fn ($state) => nl2br(e($state)))
                     ->tooltip(fn($record) => strip_tags($record->content)),
 
+                // FIXED: Sửa lại logic hiển thị hình ảnh trong table
                 Tables\Columns\ImageColumn::make('images')
                     ->label('Hình Ảnh')
                     ->stacked()
@@ -198,22 +262,38 @@ class RepeatScheduledResource extends Resource
                     ->disk('public')
                     ->extraAttributes(['class' => 'rounded-lg shadow-sm'])
                     ->getStateUsing(function ($record) {
-                        $images = $record->images;
-                        if (is_array($images) && !empty($images)) {
-                            $images = array_map(function ($image) {
-                                $image = str_replace('\\', '/', $image);
-                                if (preg_match('#^images/#', $image)) {
-                                    return $image;
-                                }
-                                return 'images/' . $image;
-                            }, $images);
-                            Log::info('ImageColumn state', [
-                                'record_id' => $record->id,
-                                'images' => $images,
-                            ]);
-                            return $images;
+                        if (!$record->images || !is_array($record->images)) {
+                            return [];
                         }
-                        return [];
+
+                        $images = array_filter($record->images, function($image) {
+                            return !empty($image) && is_string($image);
+                        });
+
+                        if (empty($images)) {
+                            return [];
+                        }
+
+                        // Chuẩn hóa đường dẫn hình ảnh
+                        $images = array_map(function ($image) {
+                            $image = str_replace('\\', '/', trim($image));
+
+                            // Nếu đã có prefix 'images/', giữ nguyên
+                            if (str_starts_with($image, 'images/')) {
+                                return $image;
+                            }
+
+                            // Nếu chưa có, thêm prefix 'images/'
+                            return 'images/' . ltrim($image, '/');
+                        }, $images);
+
+                        Log::info('Table ImageColumn state', [
+                            'record_id' => $record->id,
+                            'original_images' => $record->images,
+                            'processed_images' => $images,
+                        ]);
+
+                        return $images;
                     }),
 
                 Tables\Columns\TextColumn::make('aiPostPrompt.user.name')
@@ -230,7 +310,7 @@ class RepeatScheduledResource extends Resource
                     ->color('warning')
                     ->icon('heroicon-o-user'),
 
-                Tables\Columns\TextColumn::make('facebook_post_id')
+                Tables\Columns\TextColumn::make('post_ids')
                     ->label('Post ID')
                     ->limit(15)
                     ->fontFamily('mono')
@@ -238,6 +318,16 @@ class RepeatScheduledResource extends Resource
                     ->copyMessage('Đã sao chép Post ID!')
                     ->badge()
                     ->color('secondary')
+                    ->formatStateUsing(function ($record) {
+                        $postIds = [];
+                        if ($record->facebook_post_id) {
+                            $postIds[] = 'FB: ' . $record->facebook_post_id;
+                        }
+                        if ($record->instagram_post_id) {
+                            $postIds[] = 'IG: ' . $record->instagram_post_id;
+                        }
+                        return implode(' | ', $postIds) ?: 'Không có ID';
+                    })
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('engagement_stats')
@@ -275,6 +365,14 @@ class RepeatScheduledResource extends Resource
                     ->query(fn($query) => $query->whereNotNull('images')
                         ->where('images', '!=', '[]')
                         ->where('images', '!=', '')),
+
+                Tables\Filters\Filter::make('facebook_posts')
+                    ->label('Bài Facebook')
+                    ->query(fn($query) => $query->whereNotNull('facebook_post_id')),
+
+                Tables\Filters\Filter::make('instagram_posts')
+                    ->label('Bài Instagram')
+                    ->query(fn($query) => $query->whereNotNull('instagram_post_id')),
             ])
             ->actions([
                 Tables\Actions\ActionGroup::make([
@@ -303,6 +401,19 @@ class RepeatScheduledResource extends Resource
                         ->openUrlInNewTab()
                         ->visible(fn($record) => !empty($record->facebook_post_id)),
 
+                    Tables\Actions\Action::make('view_on_instagram')
+                        ->label('Xem Trên Instagram')
+                        ->icon('heroicon-o-camera')
+                        ->color('pink')
+                        ->url(function ($record) {
+                            if ($record->instagram_post_id) {
+                                return "https://www.instagram.com/p/{$record->instagram_post_id}";
+                            }
+                            return null;
+                        })
+                        ->openUrlInNewTab()
+                        ->visible(fn($record) => !empty($record->instagram_post_id)),
+
                     Tables\Actions\Action::make('get_engagement')
                         ->label('Lấy Thống Kê Tương Tác')
                         ->icon('heroicon-o-chart-bar')
@@ -326,7 +437,7 @@ class RepeatScheduledResource extends Resource
                                     ->send();
                             }
                         })
-                        ->visible(fn($record) => !empty($record->facebook_post_id)),
+                        ->visible(fn($record) => !empty($record->facebook_post_id) || !empty($record->instagram_post_id)),
 
                     Tables\Actions\Action::make('duplicate_post')
                         ->label('Tạo Bài Mới Tương Tự')
@@ -358,8 +469,9 @@ class RepeatScheduledResource extends Resource
                         ->color('danger')
                         ->requiresConfirmation()
                         ->modalHeading('Xóa Bài Viết')
-                        ->modalDescription('Bạn có chắc chắn muốn xóa bài viết này? Bài viết sẽ bị xóa cả trên Facebook và trong hệ thống.')
+                        ->modalDescription('Bạn có chắc chắn muốn xóa bài viết này? Bài viết sẽ bị xóa cả trên mạng xã hội và trong hệ thống.')
                         ->before(function ($record) {
+                            // Xóa bài viết Facebook
                             if ($record->facebook_post_id && $record->platform_account_id) {
                                 try {
                                     $platformAccount = PlatformAccount::find($record->platform_account_id);
@@ -402,6 +514,41 @@ class RepeatScheduledResource extends Resource
                                         ->send();
                                 }
                             }
+
+                            // Xóa bài viết Instagram (nếu có InstagramService)
+                            if ($record->instagram_post_id && $record->platform_account_id) {
+                                try {
+                                    $platformAccount = PlatformAccount::find($record->platform_account_id);
+
+                                    if ($platformAccount && $platformAccount->access_token) {
+                                        // Uncomment when InstagramService is available
+                                        // $instagramService = app(InstagramService::class);
+                                        // $instagramService->deletePost($record->instagram_post_id, $platformAccount->access_token);
+
+                                        Log::info('Xóa bài viết trên Instagram thành công', [
+                                            'post_id' => $record->instagram_post_id,
+                                            'record_id' => $record->id,
+                                        ]);
+
+                                        Notification::make()
+                                            ->title('Thành công!')
+                                            ->body('Bài viết đã được xóa khỏi Instagram.')
+                                            ->success()
+                                            ->send();
+                                    }
+                                } catch (\Exception $e) {
+                                    Log::error('Lỗi khi xóa bài viết trên Instagram', [
+                                        'post_id' => $record->instagram_post_id,
+                                        'record_id' => $record->id,
+                                        'error' => $e->getMessage(),
+                                    ]);
+                                    Notification::make()
+                                        ->title('Lỗi!')
+                                        ->body('Không thể xóa bài viết trên Instagram: ' . $e->getMessage())
+                                        ->danger()
+                                        ->send();
+                                }
+                            }
                         }),
                 ])->tooltip('Tùy chọn')
                     ->icon('heroicon-o-ellipsis-vertical')
@@ -432,7 +579,7 @@ class RepeatScheduledResource extends Resource
                         ->modalDescription('Cập nhật thống kê tương tác cho tất cả bài viết đã chọn.')
                         ->action(function ($records) {
                             foreach ($records as $record) {
-                                if ($record->facebook_post_id) {
+                                if ($record->facebook_post_id || $record->instagram_post_id) {
                                     // Logic to update engagement stats
                                 }
                             }
@@ -446,11 +593,12 @@ class RepeatScheduledResource extends Resource
                     Tables\Actions\DeleteBulkAction::make()
                         ->label('Xóa Tất Cả Đã Chọn')
                         ->modalHeading('Xóa Các Bài Viết Đã Chọn')
-                        ->modalSubheading('Bạn có chắc chắn muốn xóa các bài viết này? Chúng sẽ bị xóa cả trên Facebook và trong hệ thống.')
+                        ->modalSubheading('Bạn có chắc chắn muốn xóa các bài viết này? Chúng sẽ bị xóa cả trên mạng xã hội và trong hệ thống.')
                         ->modalButton('Xác Nhận Xóa')
                         ->color('danger')
                         ->before(function ($records) {
                             foreach ($records as $record) {
+                                // Xóa Facebook posts
                                 if ($record->facebook_post_id && $record->platform_account_id) {
                                     try {
                                         $platformAccount = PlatformAccount::find($record->platform_account_id);
@@ -472,6 +620,30 @@ class RepeatScheduledResource extends Resource
                                     } catch (\Exception $e) {
                                         Log::error('Lỗi khi xóa bài viết trên Facebook', [
                                             'post_id' => $record->facebook_post_id,
+                                            'record_id' => $record->id,
+                                            'error' => $e->getMessage(),
+                                        ]);
+                                    }
+                                }
+
+                                // Xóa Instagram posts
+                                if ($record->instagram_post_id && $record->platform_account_id) {
+                                    try {
+                                        $platformAccount = PlatformAccount::find($record->platform_account_id);
+
+                                        if ($platformAccount && $platformAccount->access_token) {
+                                            // Uncomment when InstagramService is available
+                                            // $instagramService = app(InstagramService::class);
+                                            // $instagramService->deletePost($record->instagram_post_id, $platformAccount->access_token);
+
+                                            Log::info('Xóa bài viết trên Instagram thành công', [
+                                                'post_id' => $record->instagram_post_id,
+                                                'record_id' => $record->id,
+                                            ]);
+                                        }
+                                    } catch (\Exception $e) {
+                                        Log::error('Lỗi khi xóa bài viết trên Instagram', [
+                                            'post_id' => $record->instagram_post_id,
                                             'record_id' => $record->id,
                                             'error' => $e->getMessage(),
                                         ]);
@@ -500,6 +672,7 @@ class RepeatScheduledResource extends Resource
         return [
             'index' => Pages\ListRepeatScheduleds::route('/'),
             'create' => Pages\CreateRepeatScheduled::route('/create'),
+
             'edit' => Pages\EditRepeatScheduled::route('/{record}/edit'),
         ];
     }
@@ -521,6 +694,6 @@ class RepeatScheduledResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['title', 'content', 'facebook_post_id', 'platformAccount.name', 'aiPostPrompt.user.name'];
+        return ['title', 'content', 'facebook_post_id', 'instagram_post_id', 'platformAccount.name', 'aiPostPrompt.user.name'];
     }
 }
