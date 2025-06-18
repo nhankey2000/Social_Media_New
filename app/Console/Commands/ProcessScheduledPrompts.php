@@ -9,7 +9,6 @@ use App\Models\PlatformAccount;
 use App\Models\ImageLibrary;
 use App\Models\RepeatScheduled;
 use App\Services\FacebookService;
-use App\Services\InstagramService;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
 
@@ -296,7 +295,7 @@ class ProcessScheduledPrompts extends Command
                     // Nếu là scheduled_at, tạo hoặc cập nhật bản ghi trong repeat_scheduled cho mỗi trang
                     if ($isScheduledAt) {
                         foreach ($postResults as $postResult) {
-                            $platformPostId = $postResult['platform_post_id'];
+                            $facebookPostId = $postResult['facebook_post_id'];
                             $platformAccountId = $postResult['platform_account_id'];
 
                             $existingSchedule = RepeatScheduled::where('ai_post_prompts_id', $prompt->id)
@@ -306,20 +305,20 @@ class ProcessScheduledPrompts extends Command
 
                             if ($existingSchedule) {
                                 $existingSchedule->update([
-                                    'platform_post_id' => $platformPostId,
+                                    'facebook_post_id' => $facebookPostId,
                                     'platform_account_id' => $platformAccountId,
                                     'reposted_at' => $now,
                                     'title' => $title,
                                     'content' => $finalContent,
                                     'images' => $imageNames,
                                     'videos' => $videoNames,
-                                    'media_ids' => $mediaIds,
+                                    'media_ids' => $mediaIds, // Lưu media_ids
                                 ]);
                                 $this->info("📝 Đã cập nhật thông tin bài đăng scheduled_at vào repeat_scheduled cho platform_account_id: {$platformAccountId}");
                             } else {
                                 RepeatScheduled::create([
                                     'ai_post_prompts_id' => $prompt->id,
-                                    'platform_post_id' => $platformPostId,
+                                    'facebook_post_id' => $facebookPostId,
                                     'platform_account_id' => $platformAccountId,
                                     'reposted_at' => $now,
                                     'schedule' => $prompt->scheduled_at,
@@ -327,7 +326,7 @@ class ProcessScheduledPrompts extends Command
                                     'content' => $finalContent,
                                     'images' => $imageNames,
                                     'videos' => $videoNames,
-                                    'media_ids' => $mediaIds,
+                                    'media_ids' => $mediaIds, // Lưu media_ids
                                 ]);
                                 $this->info("📝 Đã tạo bản ghi mới cho scheduled_at trong repeat_scheduled cho platform_account_id: {$platformAccountId}");
                             }
@@ -338,20 +337,20 @@ class ProcessScheduledPrompts extends Command
                     if ($isRepeatSchedule && $repeatSchedule && $repeatSchedule->exists) {
                         $isFirstPlatform = true;
                         foreach ($postResults as $postResult) {
-                            $platformPostId = $postResult['platform_post_id'];
+                            $facebookPostId = $postResult['facebook_post_id'];
                             $platformAccountId = $postResult['platform_account_id'];
 
                             if ($isFirstPlatform) {
                                 // Cập nhật trực tiếp bản ghi repeatSchedule hiện tại cho trang đầu tiên
                                 $repeatSchedule->update([
-                                    'platform_post_id' => $platformPostId,
+                                    'facebook_post_id' => $facebookPostId,
                                     'platform_account_id' => $platformAccountId,
                                     'reposted_at' => $now,
                                     'title' => $title,
                                     'content' => $finalContent,
                                     'images' => $imageNames,
                                     'videos' => $videoNames,
-                                    'media_ids' => $mediaIds,
+                                    'media_ids' => $mediaIds, // Lưu media_ids
                                 ]);
                                 $this->info("📝 Đã cập nhật thông tin bài đăng vào repeat_scheduled cho platform_account_id: {$platformAccountId}, schedule: {$repeatSchedule->schedule->toDateTimeString()}");
                                 $isFirstPlatform = false;
@@ -359,7 +358,7 @@ class ProcessScheduledPrompts extends Command
                                 // Tạo bản ghi mới cho các trang khác
                                 RepeatScheduled::create([
                                     'ai_post_prompts_id' => $prompt->id,
-                                    'platform_post_id' => $platformPostId,
+                                    'facebook_post_id' => $facebookPostId,
                                     'platform_account_id' => $platformAccountId,
                                     'reposted_at' => $now,
                                     'schedule' => $repeatSchedule->schedule,
@@ -367,7 +366,7 @@ class ProcessScheduledPrompts extends Command
                                     'content' => $finalContent,
                                     'images' => $imageNames,
                                     'videos' => $videoNames,
-                                    'media_ids' => $mediaIds,
+                                    'media_ids' => $mediaIds, // Lưu media_ids
                                 ]);
                                 $this->info("📝 Đã tạo bản ghi mới trong repeat_scheduled cho platform_account_id: {$platformAccountId}, schedule: {$repeatSchedule->schedule->toDateTimeString()}");
                             }
@@ -384,7 +383,7 @@ class ProcessScheduledPrompts extends Command
                         $existingSchedule = RepeatScheduled::where('ai_post_prompts_id', $prompt->id)
                             ->where('schedule', $prompt->scheduled_at)
                             ->first();
-                        if (!$existingSchedule || !$existingSchedule->platform_post_id) {
+                        if (!$existingSchedule || !$existingSchedule->facebook_post_id) {
                             if (!$nextScheduleTime || $prompt->scheduled_at->lessThan($nextScheduleTime)) {
                                 $nextScheduleTime = $prompt->scheduled_at;
                             }
@@ -392,7 +391,7 @@ class ProcessScheduledPrompts extends Command
                     }
                     if ($prompt->repeatSchedules->isNotEmpty()) {
                         foreach ($prompt->repeatSchedules as $schedule) {
-                            if ($schedule->schedule && !$schedule->platform_post_id && (!$nextScheduleTime || $schedule->schedule->lessThan($nextScheduleTime))) {
+                            if ($schedule->schedule && !$schedule->facebook_post_id && (!$nextScheduleTime || $schedule->schedule->lessThan($nextScheduleTime))) {
                                 $nextScheduleTime = $schedule->schedule;
                             }
                         }
@@ -413,6 +412,10 @@ class ProcessScheduledPrompts extends Command
 
         $this->info('✅ Đã kiểm tra và xử lý xong tất cả các bài viết đã lên lịch.');
     }
+
+    /**
+     * Gửi prompt đến ChatGPT và nhận nội dung trả về
+     */
     protected function generateContentWithChatGPT($prompt)
     {
         $client = new Client();
@@ -668,17 +671,10 @@ class ProcessScheduledPrompts extends Command
         }
     }
 
-
     protected function postToPlatform($prompt, $now, $isScheduledAt, $repeatSchedule, $imagePaths, $videoPaths, $mediaIds = [])
     {
         if (!$prompt->platform_id) {
             throw new \Exception("Platform ID is missing for prompt ID: {$prompt->id}");
-        }
-
-        // Lấy nền tảng dựa trên platform_id
-        $platform = PlatformAccount::where('platform_id', $prompt->platform_id)->first()->platform->name ?? null;
-        if (!$platform) {
-            throw new \Exception("Platform not found for platform ID: {$prompt->platform_id}");
         }
 
         // Lấy các tài khoản từ platform_accounts dựa trên platform_id và is_active = true
@@ -697,7 +693,7 @@ class ProcessScheduledPrompts extends Command
                 return [];
             }
         } else {
-            $this->info("📋 Đăng lên tất cả trang active của nền tảng ID: {$prompt->platform_id} ({$platform})");
+            $this->info("📋 Đăng lên tất cả trang active của nền tảng ID: {$prompt->platform_id}");
         }
 
         $platformAccounts = $query->get();
@@ -713,7 +709,6 @@ class ProcessScheduledPrompts extends Command
 
         $postResults = [];
         $facebookService = app(FacebookService::class);
-        $instagramService = app(InstagramService::class);
 
         foreach ($platformAccounts as $account) {
             if (!$account->access_token) {
@@ -759,29 +754,14 @@ class ProcessScheduledPrompts extends Command
                     $finalContent .= " " . $hashtagsString;
                 }
 
-                // Đăng bài dựa trên nền tảng
-                $platformPostId = null;
-                if (strtolower($platform) === 'facebook') {
+                // Đăng bài lên Facebook và lấy facebook_post_id
+                $facebookPostId = null;
+                if (!empty($videoPaths)) {
                     $this->info("📹 Đăng bài với video lên page {$pageId} ({$account->name})");
-                    if (!empty($videoPaths)) {
-                        $platformPostId = $facebookService->postVideoToPage($pageId, $account->access_token, $finalContent, $videoPaths);
-                    } else {
-                        $this->info("🖼️ Đăng bài với hình ảnh lên page {$pageId} ({$account->name})");
-                        $platformPostId = $facebookService->postToPage($pageId, $account->access_token, $finalContent, $imagePaths);
-                    }
-                } elseif (strtolower($platform) === 'instagram') {
-                    $this->info("📸 Đăng bài lên Instagram account {$pageId} ({$account->name})");
-                    $mediaType = !empty($videoPaths) ? 'video' : 'image';
-                    $media = !empty($videoPaths) ? $videoPaths : $imagePaths;
-                    $response = $instagramService->postInstagram($account, $finalContent, $media, $mediaType);
-                    if ($response['success']) {
-                        $platformPostId = $response['post_id'];
-                    } else {
-                        throw new \Exception($response['error']);
-                    }
+                    $facebookPostId = $facebookService->postVideoToPage($pageId, $account->access_token, $finalContent, $videoPaths);
                 } else {
-                    $this->warn("⚠️ Nền tảng {$platform} chưa được hỗ trợ cho account ID: {$account->id}");
-                    continue;
+                    $this->info("🖼️ Đăng bài với hình ảnh lên page {$pageId} ({$account->name})");
+                    $facebookPostId = $facebookService->postToPage($pageId, $account->access_token, $finalContent, $imagePaths);
                 }
 
                 // Nếu là đăng lần đầu, cập nhật trạng thái và used_at trong image_library
@@ -795,13 +775,13 @@ class ProcessScheduledPrompts extends Command
 
                 // Lưu kết quả bài đăng
                 $postResults[] = [
-                    'platform_post_id' => $platformPostId,
+                    'facebook_post_id' => $facebookPostId,
                     'platform_account_id' => $account->id,
                 ];
 
-                $this->info("✅ Đăng bài thành công lên {$platform} {$pageId} ({$account->name}) - Post ID: {$platformPostId}");
+                $this->info("✅ Đăng bài thành công lên page {$pageId} ({$account->name}) - Post ID: {$facebookPostId}");
             } catch (\Exception $e) {
-                $this->error("❌ Lỗi khi đăng bài lên {$platform} {$pageId}: " . $e->getMessage());
+                $this->error("❌ Lỗi khi đăng bài lên page {$pageId}: " . $e->getMessage());
             }
         }
 
