@@ -231,16 +231,18 @@ class ProcessScheduledInstagramPrompts extends Command
                                         $this->info("📁 Kiểm tra file: {$absolutePath}");
 
                                         if (file_exists($absolutePath)) {
-                                            // FIXED: Dùng absolute path cho Instagram API
+                                            // FIXED: Sử dụng public URL cho Instagram API thay vì absolute path
+                                            $publicUrl = asset("storage/$relativePath");
+
                                             if ($type === 'video') {
-                                                $videoPaths[] = $absolutePath;
+                                                $videoPaths[] = $publicUrl;
                                                 $videoNames[] = basename($relativePath);
                                             } else {
-                                                $imagePaths[] = $absolutePath;
+                                                $imagePaths[] = $publicUrl;
                                                 $imageNames[] = basename($relativePath);
                                             }
                                             $mediaIds[] = $media->id;
-                                            $this->info("✅ Thêm {$type}: {$absolutePath}");
+                                            $this->info("✅ Thêm {$type} URL: {$publicUrl}");
                                         } else {
                                             $this->warn("⚠️ File không tồn tại: {$absolutePath}");
                                         }

@@ -9,6 +9,7 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use Illuminate\Support\Facades\Log;
 use GuzzleHttp\Exception\ConnectException;
+
 class InstagramService
 {
     protected $client;
@@ -58,7 +59,7 @@ class InstagramService
      *
      * @param PlatformAccount $platformAccount
      * @param string $message Caption for the post
-     * @param array|null $media Array of media file paths (image or video)
+     * @param array|null $media Array of media URLs (not file paths)
      * @param string $mediaType Type of media ('image' or 'video')
      * @return array Response with post ID or error message
      * @throws \Exception
@@ -76,6 +77,15 @@ class InstagramService
 
             $message = $this->normalizeMessage($message);
 
+            // Log the request details
+            Log::info('Instagram post request', [
+                'account_id' => $platformAccount->id,
+                'page_id' => $platformAccount->page_id,
+                'media_type' => $mediaType,
+                'media_urls' => $media,
+                'message_length' => strlen($message),
+            ]);
+
             // Step 1: Create media container
             $params = [
                 'caption' => $message,
@@ -83,23 +93,35 @@ class InstagramService
             ];
 
             if ($media && count($media) > 0) {
-                $mediaPath = $media[0];
+                $mediaUrl = $media[0]; // Expect URL, not file path
 
-                if (!file_exists($mediaPath)) {
-                    throw new \Exception('Media file does not exist: ' . $mediaPath);
+                // FIXED: Validate URL format
+                if (!filter_var($mediaUrl, FILTER_VALIDATE_URL)) {
+                    throw new \Exception('Invalid media URL format: ' . $mediaUrl);
                 }
 
+                // FIXED: Log the media URL being used
+                Log::info('Using media URL for Instagram', [
+                    'media_url' => $mediaUrl,
+                    'media_type' => $mediaType
+                ]);
+
                 if ($mediaType === 'image') {
-                    $params['image_url'] = asset($mediaPath); // Assumes media is publicly accessible
+                    $params['image_url'] = $mediaUrl;
                 } elseif ($mediaType === 'video') {
                     $params['media_type'] = 'VIDEO';
-                    $params['video_url'] = asset($mediaPath); // Assumes video is publicly accessible
+                    $params['video_url'] = $mediaUrl;
                 } else {
                     throw new \Exception('Unsupported media type: ' . $mediaType);
                 }
             } else {
-                throw new \Exception('Media file is required for Instagram post.');
+                throw new \Exception('Media URL is required for Instagram post.');
             }
+
+            // Log the API request (hide access token)
+            Log::info('Instagram API request params', [
+                'params' => array_merge($params, ['access_token' => '[HIDDEN]'])
+            ]);
 
             $response = $this->client->post("{$platformAccount->page_id}/media", [
                 'form_params' => $params,
@@ -107,8 +129,12 @@ class InstagramService
 
             $containerData = json_decode($response->getBody()->getContents(), true);
 
+            Log::info('Instagram container creation response', [
+                'response' => $containerData
+            ]);
+
             if (isset($containerData['error'])) {
-                throw new \Exception('Failed to create media container: ' . $containerData['error']['message']);
+                throw new \Exception('Failed to create media container: ' . json_encode($containerData['error']));
             }
 
             if (!isset($containerData['id'])) {
@@ -123,14 +149,23 @@ class InstagramService
                 'access_token' => $platformAccount->access_token,
             ];
 
+            Log::info('Instagram publish request', [
+                'creation_id' => $containerId,
+                'page_id' => $platformAccount->page_id
+            ]);
+
             $publishResponse = $this->client->post("{$platformAccount->page_id}/media_publish", [
                 'form_params' => $publishParams,
             ]);
 
             $publishData = json_decode($publishResponse->getBody()->getContents(), true);
 
+            Log::info('Instagram publish response', [
+                'response' => $publishData
+            ]);
+
             if (isset($publishData['error'])) {
-                throw new \Exception('Failed to publish media: ' . $publishData['error']['message']);
+                throw new \Exception('Failed to publish media: ' . json_encode($publishData['error']));
             }
 
             return [
@@ -140,13 +175,23 @@ class InstagramService
 
         } catch (RequestException $e) {
             $errorMessage = $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
-            Log::error('Instagram post failed: ' . $errorMessage);
+            Log::error('Instagram post failed (RequestException)', [
+                'error' => $errorMessage,
+                'account_id' => $platformAccount->id ?? null,
+                'media_type' => $mediaType ?? null,
+                'media_urls' => $media ?? null,
+            ]);
             return [
                 'success' => false,
                 'error' => 'Failed to post to Instagram: ' . $errorMessage,
             ];
         } catch (\Exception $e) {
-            Log::error('Instagram post failed: ' . $e->getMessage());
+            Log::error('Instagram post failed (Exception)', [
+                'error' => $e->getMessage(),
+                'account_id' => $platformAccount->id ?? null,
+                'media_type' => $mediaType ?? null,
+                'media_urls' => $media ?? null,
+            ]);
             return [
                 'success' => false,
                 'error' => 'Failed to post to Instagram: ' . $e->getMessage(),
@@ -167,4 +212,3 @@ class InstagramService
         return trim($message);
     }
 }
-
