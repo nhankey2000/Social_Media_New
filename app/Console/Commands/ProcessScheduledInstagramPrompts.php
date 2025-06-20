@@ -183,17 +183,27 @@ class ProcessScheduledInstagramPrompts extends Command
                     $content = $result['content'];
                     $hashtags = $result['hashtags'];
 
-                    // Xử lý media từ image_library (hình ảnh và video) dựa trên image_settings
+                    // FIXED: Xử lý media từ image_library với error handling tốt hơn
                     $imagePaths = [];
                     $imageNames = [];
                     $videoPaths = [];
                     $videoNames = [];
-                    $mediaIds = []; // Lưu ID của media để cập nhật trạng thái
+                    $mediaIds = [];
+
+                    $this->info("🔍 Kiểm tra image_settings: " . json_encode($prompt->image_settings));
 
                     if (!empty($prompt->image_settings) && is_array($prompt->image_settings)) {
-                        foreach ($prompt->image_settings as $setting) {
+                        foreach ($prompt->image_settings as $index => $setting) {
+                            // FIXED: Kiểm tra cấu trúc setting
+                            if (!is_array($setting)) {
+                                $this->warn("⚠️ Setting tại index {$index} không phải là array: " . json_encode($setting));
+                                continue;
+                            }
+
                             $categoryId = $setting['image_category'] ?? null;
                             $count = $setting['image_count'] ?? 0;
+
+                            $this->info("📋 Xử lý setting {$index}: category_id={$categoryId}, count={$count}");
 
                             if ($categoryId && $count > 0) {
                                 // Lấy media chưa sử dụng
@@ -203,56 +213,54 @@ class ProcessScheduledInstagramPrompts extends Command
                                     ->take($count)
                                     ->get();
 
+                                $this->info("🔍 Tìm thấy {$records->count()} media trong category {$categoryId}");
+
                                 if ($records->isNotEmpty()) {
                                     foreach ($records as $media) {
                                         $type = $media->type;
                                         $filename = $media->item;
                                         $directory = $type === 'video' ? 'videos' : 'images';
+
+                                        // FIXED: Chuẩn hóa đường dẫn
                                         $relativePath = str_starts_with($filename, "$directory/")
                                             ? $filename
                                             : "$directory/$filename";
-                                        $publicUrl = asset("storage/$relativePath");
-
 
                                         $absolutePath = storage_path("app/public/$relativePath");
+
+                                        $this->info("📁 Kiểm tra file: {$absolutePath}");
+
                                         if (file_exists($absolutePath)) {
+                                            // FIXED: Dùng absolute path cho Instagram API
                                             if ($type === 'video') {
-                                                $videoPaths[] = $publicUrl;
+                                                $videoPaths[] = $absolutePath;
                                                 $videoNames[] = basename($relativePath);
                                             } else {
-                                                $imagePaths[] = $publicUrl;
+                                                $imagePaths[] = $absolutePath;
                                                 $imageNames[] = basename($relativePath);
                                             }
                                             $mediaIds[] = $media->id;
+                                            $this->info("✅ Thêm {$type}: {$absolutePath}");
+                                        } else {
+                                            $this->warn("⚠️ File không tồn tại: {$absolutePath}");
                                         }
-
                                     }
                                 } else {
                                     $this->warn("⚠️ Không tìm thấy media chưa sử dụng trong image_library với category_id = {$categoryId}");
                                 }
                             } else {
-                                $this->warn("⚠️ Thiếu image_category hoặc image_count trong image_settings: " . json_encode($setting));
+                                $this->warn("⚠️ Thiếu image_category hoặc image_count trong image_settings tại index {$index}: " . json_encode($setting));
                             }
                         }
 
-                        // Lọc các file tồn tại
-                        $imagePaths = array_filter($imagePaths, 'file_exists');
-                        $imageNames = array_filter($imageNames, function ($name, $index) use ($imagePaths) {
-                            return file_exists($imagePaths[$index]);
-                        }, ARRAY_FILTER_USE_BOTH);
-                        $imagePaths = array_values($imagePaths);
-                        $imageNames = array_values($imageNames);
-
-                        $videoPaths = array_filter($videoPaths, 'file_exists');
-                        $videoNames = array_filter($videoNames, function ($name, $index) use ($videoPaths) {
-                            return file_exists($videoPaths[$index]);
-                        }, ARRAY_FILTER_USE_BOTH);
-                        $videoPaths = array_values($videoPaths);
-                        $videoNames = array_values($videoNames);
-
-                        $this->info("🖼️ Đã chọn " . count($imagePaths) . " hình ảnh và " . count($videoPaths) . " video từ image_library (ID: " . implode(', ', $mediaIds) . ").");
+                        $this->info("🖼️ Tổng kết: " . count($imagePaths) . " hình ảnh và " . count($videoPaths) . " video từ image_library (Media IDs: " . implode(', ', $mediaIds) . ").");
                     } else {
                         $this->warn("⚠️ Không có image_settings để lấy media từ image_library.");
+                    }
+
+                    // FIXED: Kiểm tra xem có media nào không, nếu không thì báo lỗi
+                    if (empty($imagePaths) && empty($videoPaths)) {
+                        throw new \Exception('Instagram yêu cầu phải có ít nhất 1 hình ảnh hoặc video. Không tìm thấy media nào từ image_settings.');
                     }
 
                     // Ghép nội dung hoàn chỉnh để đăng (phù hợp với Instagram)
@@ -420,6 +428,11 @@ class ProcessScheduledInstagramPrompts extends Command
                     $this->info("✅ Bài viết Instagram ID: {$prompt->id} đã được xử lý và đăng thành công.");
                 } catch (\Exception $e) {
                     $this->error("❌ Lỗi khi xử lý bài viết Instagram ID: {$prompt->id} - {$e->getMessage()}");
+                    Log::error("Instagram processing error", [
+                        'prompt_id' => $prompt->id,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
                     $prompt->update(['status' => 'pending']);
                 }
             }
@@ -743,6 +756,7 @@ class ProcessScheduledInstagramPrompts extends Command
                 $mediaPaths = !empty($videoPaths) ? $videoPaths : $imagePaths;
 
                 $this->info("📱 Đăng bài lên Instagram account {$account->page_id} ({$account->name}) với media type: {$mediaType}");
+                $this->info("📁 Media paths: " . implode(', ', $mediaPaths));
 
                 // Đăng bài lên Instagram và lấy instagram_post_id
                 $result = $instagramService->postInstagram($account, $finalContent, $mediaPaths, $mediaType);
@@ -771,6 +785,12 @@ class ProcessScheduledInstagramPrompts extends Command
                 $this->info("✅ Đăng bài thành công lên Instagram account {$account->page_id} ({$account->name}) - Post ID: {$instagramPostId}");
             } catch (\Exception $e) {
                 $this->error("❌ Lỗi khi đăng bài lên Instagram account {$account->page_id}: " . $e->getMessage());
+                Log::error("Instagram posting error", [
+                    'account_id' => $account->id,
+                    'page_id' => $account->page_id,
+                    'error' => $e->getMessage(),
+                    'media_paths' => $mediaPaths ?? [],
+                ]);
             }
         }
 
