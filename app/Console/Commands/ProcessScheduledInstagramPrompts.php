@@ -529,11 +529,6 @@ class ProcessScheduledInstagramPrompts extends Command
             $parsedContent['content'] = trim($parsedContent['content']);
 
             $this->info('✅ Đã nhận được nội dung từ ChatGPT cho Instagram.');
-// Bổ sung kiểm tra hashtag hợp lệ
-            if (!isset($parsedContent['hashtags']) || !is_array($parsedContent['hashtags']) || count($parsedContent['hashtags']) === 0) {
-                $this->warn('⚠️ Trường hashtags không có hoặc không hợp lệ. Gán mặc định.');
-                $parsedContent['hashtags'] = ['#ongde', '#dulichongde', '#langdulichsinhthaiongde', '#homestay'];
-            }
 
             return [
                 'title' => $parsedContent['title'],
@@ -669,11 +664,6 @@ class ProcessScheduledInstagramPrompts extends Command
             $parsedContent['content'] = trim($parsedContent['content']);
 
             $this->info('✅ Đã nhận được nội dung từ ChatGPT Mini cho Instagram.');
-// Bổ sung kiểm tra hashtag hợp lệ
-            if (!isset($parsedContent['hashtags']) || !is_array($parsedContent['hashtags']) || count($parsedContent['hashtags']) === 0) {
-                $this->warn('⚠️ Trường hashtags không có hoặc không hợp lệ. Gán mặc định.');
-                $parsedContent['hashtags'] = ['#ongde', '#dulichongde', '#langdulichsinhthaiongde', '#homestay'];
-            }
 
             return [
                 'title' => $parsedContent['title'],
