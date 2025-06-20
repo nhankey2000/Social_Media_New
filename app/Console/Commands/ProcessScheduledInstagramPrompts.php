@@ -211,18 +211,21 @@ class ProcessScheduledInstagramPrompts extends Command
                                         $relativePath = str_starts_with($filename, "$directory/")
                                             ? $filename
                                             : "$directory/$filename";
-                                        $absolutePath = storage_path("app/public/$relativePath");
+                                        $publicUrl = asset("storage/$relativePath");
 
+
+                                        $absolutePath = storage_path("app/public/$relativePath");
                                         if (file_exists($absolutePath)) {
                                             if ($type === 'video') {
-                                                $videoPaths[] = $absolutePath;
-                                                $videoNames[] = basename($absolutePath);
+                                                $videoPaths[] = $publicUrl;
+                                                $videoNames[] = basename($relativePath);
                                             } else {
-                                                $imagePaths[] = $absolutePath;
-                                                $imageNames[] = basename($absolutePath);
+                                                $imagePaths[] = $publicUrl;
+                                                $imageNames[] = basename($relativePath);
                                             }
                                             $mediaIds[] = $media->id;
                                         }
+
                                     }
                                 } else {
                                     $this->warn("⚠️ Không tìm thấy media chưa sử dụng trong image_library với category_id = {$categoryId}");
