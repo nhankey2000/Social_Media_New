@@ -14,21 +14,25 @@ class PostRepost extends Model
         'platform_account_ids',
         'reposted_at',
         'facebook_post_id',
-        'platform_account_id', // Thay platform_account_ids thành platform_account_id
+        'instagram_post_id', // Thêm trường này
+        'platform_account_id',
     ];
 
     protected $casts = [
         'platform_account_ids' => 'array',
         'reposted_at' => 'datetime',
     ];
+
     public function platformAccount()
     {
         return $this->belongsTo(PlatformAccount::class, 'platform_account_id');
     }
+
     public function post(): BelongsTo
     {
         return $this->belongsTo(Post::class);
     }
+
     public function aiPrompt(): BelongsTo
     {
         return $this->belongsTo(AiPostPrompt::class, 'post_id');

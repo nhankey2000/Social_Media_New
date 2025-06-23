@@ -16,6 +16,7 @@ class Post extends Model
         'status',
         'scheduled_at',
         'facebook_post_id',
+        'instagram_post_id', // Thêm trường này
         'platform_account_id',
     ];
 
