@@ -8,7 +8,7 @@ use App\Models\Platform;
 use App\Models\PlatformAccount;
 use App\Models\PostRepost;
 use App\Services\FacebookService;
-use App\Services\InstagramService; // Thêm InstagramService
+use App\Services\InstagramService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Components\Select;
@@ -79,7 +79,7 @@ class PostResource extends Resource
     private static function prepareMediaPaths(array $media, int $postId): array
     {
         $mediaPaths = [];
-        $mediaUrls = []; // Thêm để lưu URLs cho Instagram
+        $mediaUrls = [];
         $mediaType = 'image';
         $allowedImageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'heif', 'webp'];
         $allowedVideoExtensions = ['mp4', 'mov', 'avi', 'wmv', 'flv', 'mkv', 'webm'];
@@ -122,7 +122,7 @@ class PostResource extends Resource
                     }
 
                     $mediaPaths[] = $absolutePath;
-                    $mediaUrls[] = asset('storage/' . $mediaPath); // Thêm URL cho Instagram
+                    $mediaUrls[] = asset('storage/' . $mediaPath);
                 } else {
                     Log::warning('File media không tồn tại', [
                         'post_id' => $postId,
@@ -135,12 +135,11 @@ class PostResource extends Resource
 
         return [
             'paths' => $mediaPaths,
-            'urls' => $mediaUrls, // Thêm URLs
+            'urls' => $mediaUrls,
             'type' => $mediaType,
         ];
     }
 
-    // Thêm method để xử lý đăng Instagram
     private static function postToInstagram(Post $record, array $mediaData, string $message, InstagramService $instagramService): ?string
     {
         $platformAccount = $record->platformAccount;
@@ -157,7 +156,6 @@ class PostResource extends Resource
             throw new \Exception('Instagram Business Account ID không tìm thấy cho tài khoản: ' . $platformAccount->name);
         }
 
-        // Instagram yêu cầu phải có media
         if (empty($mediaData['urls'])) {
             throw new \Exception('Instagram yêu cầu phải có ít nhất 1 hình ảnh hoặc video.');
         }
@@ -181,7 +179,6 @@ class PostResource extends Resource
                     ->schema([
                         Forms\Components\Grid::make(2)
                             ->schema([
-                                // Platform selection
                                 Select::make('platform_id')
                                     ->label('Chọn Nền Tảng')
                                     ->options(Platform::all()->pluck('name', 'id')->toArray())
@@ -191,7 +188,6 @@ class PostResource extends Resource
                                     ->afterStateUpdated(fn(Set $set) => $set('platform_account_ids', []))
                                     ->required(),
 
-                                // Platform accounts (pages)
                                 CheckboxList::make('platform_account_ids')
                                     ->label('Tên Trang')
                                     ->options(function (Get $get) {
@@ -218,7 +214,6 @@ class PostResource extends Resource
                 Forms\Components\Section::make('Nội Dung Bài Viết')
                     ->description('Nhập tiêu đề, nội dung và các thông tin liên quan.')
                     ->schema([
-                        // Actions for generating content
                         Forms\Components\Actions::make([
                             Forms\Components\Actions\Action::make('generate_with_gpt')
                                 ->label('Tạo Nội Dung Bằng GPT')
@@ -384,11 +379,9 @@ class PostResource extends Resource
                                 }),
                         ])->columnSpanFull(),
 
-                        // Hidden field for tracking content generation
                         Forms\Components\Hidden::make('is_content_generated')
                             ->default(false),
 
-                        // Title and Content
                         Forms\Components\Grid::make(1)
                             ->schema([
                                 TextInput::make('title')
@@ -403,7 +396,6 @@ class PostResource extends Resource
                                     ->extraAttributes(['class' => 'bg-gray-800 text-gray-300']),
                             ]),
 
-                        // Add contact info action
                         Forms\Components\Actions::make([
                             Forms\Components\Actions\Action::make('add_contact_info')
                                 ->label('Tự Động Thêm Phần Liên Hệ')
@@ -430,7 +422,6 @@ class PostResource extends Resource
                                 }),
                         ])->columnSpanFull(),
 
-                        // Media upload
                         FileUpload::make('media')
                             ->label('Ảnh/Video')
                             ->multiple()
@@ -441,7 +432,6 @@ class PostResource extends Resource
                             ->columnSpanFull()
                             ->extraAttributes(['class' => 'bg-gray-800 text-gray-300']),
 
-                        // Hashtags
                         TagsInput::make('hashtags')
                             ->label('Hashtags')
                             ->placeholder('Thêm hashtags')
@@ -456,7 +446,6 @@ class PostResource extends Resource
                     ->schema([
                         Forms\Components\Grid::make(2)
                             ->schema([
-                                // Status
                                 Select::make('status')
                                     ->label('Trạng Thái')
                                     ->placeholder('Chọn trạng thái')
@@ -470,7 +459,6 @@ class PostResource extends Resource
                                     ->disabled()
                                     ->dehydrated(true),
 
-                                // Scheduled date
                                 DateTimePicker::make('scheduled_at')
                                     ->label('Hẹn Giờ Đăng Lần Đầu')
                                     ->nullable()
@@ -490,7 +478,6 @@ class PostResource extends Resource
                                     }),
                             ]),
 
-                        // Reposts
                         Repeater::make('reposts')
                             ->label('Lịch Đăng Lại')
                             ->schema([
@@ -598,7 +585,6 @@ class PostResource extends Resource
                     ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->extraAttributes(['class' => 'text-gray-400']),
-                // Thêm cột hiển thị Post ID cho cả Facebook và Instagram
                 Tables\Columns\TextColumn::make('post_ids')
                     ->label('Post IDs')
                     ->formatStateUsing(function ($record) {
@@ -637,36 +623,41 @@ class PostResource extends Resource
                     ->color('danger')
                     ->requiresConfirmation()
                     ->before(function (Post $record, FacebookService $facebookService, InstagramService $instagramService) {
-                        // Xóa từ Facebook nếu có
-                        if ($record->facebook_post_id) {
-                            $platformAccount = $record->platformAccount;
-                            if ($platformAccount && $platformAccount->platform->name === 'Facebook' && $platformAccount->access_token) {
+                        $platformAccount = $record->platformAccount;
+
+                        if ($platformAccount) {
+                            $platformName = $platformAccount->platform->name;
+
+                            // Xóa từ Facebook nếu có
+                            if ($platformName === 'Facebook' && $record->facebook_post_id && $platformAccount->access_token) {
                                 try {
                                     $facebookService->deletePost($record->facebook_post_id, $platformAccount->access_token);
                                 } catch (\Exception $e) {
                                     Log::error('Failed to delete post from Facebook: ' . $e->getMessage());
                                 }
                             }
-                        }
 
-                        // Instagram không hỗ trợ xóa bài viết qua API
-                        if ($record->instagram_post_id) {
-                            Log::info('Instagram post cannot be deleted via API: ' . $record->instagram_post_id);
+                            // Instagram không hỗ trợ xóa bài viết qua API
+                            if ($platformName === 'Instagram' && $record->instagram_post_id) {
+                                Log::info('Instagram post cannot be deleted via API: ' . $record->instagram_post_id);
+                            }
                         }
 
                         // Xóa reposts
                         foreach ($record->reposts as $repost) {
-                            if ($repost->facebook_post_id) {
-                                $platformAccount = PlatformAccount::find($repost->platform_account_id);
-                                if ($platformAccount && $platformAccount->platform->name === 'Facebook' && $platformAccount->access_token) {
+                            $repostPlatformAccount = PlatformAccount::find($repost->platform_account_id);
+                            if ($repostPlatformAccount) {
+                                $repostPlatformName = $repostPlatformAccount->platform->name;
+
+                                if ($repostPlatformName === 'Facebook' && $repost->facebook_post_id && $repostPlatformAccount->access_token) {
                                     try {
-                                        $facebookService->deletePost($repost->facebook_post_id, $platformAccount->access_token);
+                                        $facebookService->deletePost($repost->facebook_post_id, $repostPlatformAccount->access_token);
                                     } catch (\Exception $e) {
                                         Log::error('Failed to delete repost from Facebook: ' . $e->getMessage());
                                     }
                                 }
+                                // Instagram reposts cũng không thể xóa qua API
                             }
-                            // Instagram reposts cũng không thể xóa qua API
                         }
                     }),
 
@@ -782,6 +773,177 @@ class PostResource extends Resource
                     ->modalButton('Đăng ngay')
                     // CHỈ HIỂN THỊ KHI STATUS KHÔNG PHẢI 'published'
                     ->visible(fn(Post $record) => $record->status !== 'published'),
+
+                // Thêm nút cập nhật bài viết
+                TableAction::make('update_post')
+                    ->label('Cập Nhật Bài Viết')
+                    ->icon('heroicon-o-pencil')
+                    ->color('warning')
+                    ->form([
+                        TextInput::make('title')
+                            ->label('Tiêu Đề')
+                            ->required()
+                            ->maxLength(255)
+                            ->default(fn(Post $record) => $record->title),
+                        Textarea::make('content')
+                            ->label('Nội Dung')
+                            ->required()
+                            ->default(fn(Post $record) => strip_tags($record->content)),
+                        FileUpload::make('media')
+                            ->label('Ảnh/Video Mới (Nếu Có)')
+                            ->multiple()
+                            ->directory('post-media')
+                            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif', 'image/tiff', 'image/heif', 'image/webp', 'video/mp4', 'video/mov', 'video/avi', 'video/wmv', 'video/flv', 'video/mkv', 'video/webm'])
+                            ->maxSize(102400)
+                            ->maxFiles(10)
+                            ->default(fn(Post $record) => $record->media),
+                        TagsInput::make('hashtags')
+                            ->label('Hashtags')
+                            ->placeholder('Thêm hashtags')
+                            ->default(fn(Post $record) => $record->hashtags),
+                    ])
+                    ->action(function (Post $record, array $data, FacebookService $facebookService, InstagramService $instagramService) {
+                        $platformAccount = $record->platformAccount;
+
+                        if (!$platformAccount) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Lỗi')
+                                ->body('Không tìm thấy tài khoản platform.')
+                                ->send();
+                            return;
+                        }
+
+                        $platformName = $platformAccount->platform->name;
+
+                        // Kiểm tra xem bài viết đã được đăng chưa
+                        if ($record->status !== 'published') {
+                            Notification::make()
+                                ->danger()
+                                ->title('Lỗi')
+                                ->body('Bài viết này chưa được đăng, không thể cập nhật.')
+                                ->send();
+                            return;
+                        }
+
+                        // Kiểm tra có post_id tương ứng với platform không
+                        if ($platformName === 'Facebook' && !$record->facebook_post_id) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Lỗi')
+                                ->body('Bài viết này chưa được đăng lên Facebook, không thể cập nhật.')
+                                ->send();
+                            return;
+                        }
+
+                        if ($platformName === 'Instagram' && !$record->instagram_post_id) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Lỗi')
+                                ->body('Bài viết này chưa được đăng lên Instagram, không thể cập nhật.')
+                                ->send();
+                            return;
+                        }
+
+                        $title = $data['title'] ?: 'Bài viết không có tiêu đề';
+                        $content = $data['content'] ?: '';
+                        $content = self::formatContentForPost($content);
+
+                        $mediaData = self::prepareMediaPaths($data['media'] ?? [], $record->id);
+
+                        try {
+                            if ($platformName === 'Facebook') {
+                                $boldTitle = self::toBoldUnicode($title);
+                                $message = $boldTitle . "\n\n" . $content;
+
+                                if (!empty($data['hashtags'])) {
+                                    $message .= "\n" . implode(' ', $data['hashtags']);
+                                }
+
+                                $pageId = $platformAccount->page_id;
+                                if (!$pageId) {
+                                    throw new \Exception('Page ID không tìm thấy cho trang: ' . $platformAccount->name);
+                                }
+
+                                if (!empty($mediaData['paths'])) {
+                                    $newPostId = $facebookService->updatePostWithMedia(
+                                        $record->facebook_post_id,
+                                        $pageId,
+                                        $platformAccount->access_token,
+                                        $message,
+                                        $mediaData['paths'],
+                                        $mediaData['type']
+                                    );
+
+                                    $record->update([
+                                        'facebook_post_id' => $newPostId,
+                                        'title' => $data['title'],
+                                        'content' => $data['content'],
+                                        'hashtags' => $data['hashtags'],
+                                        'media' => $data['media'],
+                                    ]);
+                                } else {
+                                    $facebookService->updatePost($record->facebook_post_id, $platformAccount->access_token, $message);
+                                    $record->update([
+                                        'title' => $data['title'],
+                                        'content' => $data['content'],
+                                        'hashtags' => $data['hashtags'],
+                                    ]);
+                                }
+
+                            } elseif ($platformName === 'Instagram') {
+                                // Instagram không hỗ trợ cập nhật bài viết qua API
+                                Notification::make()
+                                    ->warning()
+                                    ->title('Thông Báo')
+                                    ->body('Instagram không hỗ trợ cập nhật bài viết qua API. Chỉ cập nhật thông tin cục bộ.')
+                                    ->send();
+
+                                // Chỉ cập nhật thông tin cục bộ
+                                $record->update([
+                                    'title' => $data['title'],
+                                    'content' => $data['content'],
+                                    'hashtags' => $data['hashtags'],
+                                    'media' => $data['media'],
+                                ]);
+                                return;
+                            }
+
+                            Notification::make()
+                                ->success()
+                                ->title('Cập Nhật Thành Công')
+                                ->body("Bài viết đã được cập nhật trên {$platformName}: {$platformAccount->name}.")
+                                ->send();
+
+                        } catch (\Exception $e) {
+                            Log::error("Error updating post on {$platformName} for Post ID {$record->id}: " . $e->getMessage());
+                            Notification::make()
+                                ->danger()
+                                ->title('Lỗi Khi Cập Nhật Bài')
+                                ->body("Không thể cập nhật bài trên {$platformName}: " . $e->getMessage())
+                                ->send();
+                        }
+                    })
+                    ->requiresConfirmation()
+                    ->modalHeading('Xác nhận cập nhật bài viết')
+                    ->modalSubheading('Bạn có chắc chắn muốn cập nhật bài viết này?')
+                    ->modalButton('Cập nhật')
+                    // CHỈ HIỂN THỊ KHI STATUS LÀ 'published' VÀ CÓ POST_ID TƯƠNG ỨNG
+                    ->visible(function(Post $record) {
+                        if ($record->status !== 'published') {
+                            return false;
+                        }
+
+                        $platformAccount = $record->platformAccount;
+                        if (!$platformAccount) {
+                            return false;
+                        }
+
+                        $platformName = $platformAccount->platform->name;
+
+                        return ($platformName === 'Facebook' && $record->facebook_post_id !== null) ||
+                            ($platformName === 'Instagram' && $record->instagram_post_id !== null);
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -926,36 +1088,41 @@ class PostResource extends Resource
                         ->deselectRecordsAfterCompletion()
                         ->before(function (Collection $records, FacebookService $facebookService, InstagramService $instagramService) {
                             foreach ($records as $record) {
-                                // Xóa từ Facebook nếu có
-                                if ($record->facebook_post_id) {
-                                    $platformAccount = $record->platformAccount;
-                                    if ($platformAccount && $platformAccount->platform->name === 'Facebook' && $platformAccount->access_token) {
+                                $platformAccount = $record->platformAccount;
+
+                                if ($platformAccount) {
+                                    $platformName = $platformAccount->platform->name;
+
+                                    // Xóa từ Facebook nếu có
+                                    if ($platformName === 'Facebook' && $record->facebook_post_id && $platformAccount->access_token) {
                                         try {
                                             $facebookService->deletePost($record->facebook_post_id, $platformAccount->access_token);
                                         } catch (\Exception $e) {
                                             Log::error("❌ Xoá post Facebook lỗi: " . $e->getMessage());
                                         }
                                     }
-                                }
 
-                                // Instagram không hỗ trợ xóa bài viết qua API
-                                if ($record->instagram_post_id) {
-                                    Log::info('Instagram post cannot be deleted via API: ' . $record->instagram_post_id);
+                                    // Instagram không hỗ trợ xóa bài viết qua API
+                                    if ($platformName === 'Instagram' && $record->instagram_post_id) {
+                                        Log::info('Instagram post cannot be deleted via API: ' . $record->instagram_post_id);
+                                    }
                                 }
 
                                 // Xóa reposts
                                 foreach ($record->reposts as $repost) {
-                                    if ($repost->facebook_post_id) {
-                                        $platformAccount = PlatformAccount::find($repost->platform_account_id);
-                                        if ($platformAccount && $platformAccount->platform->name === 'Facebook' && $platformAccount->access_token) {
+                                    $repostPlatformAccount = PlatformAccount::find($repost->platform_account_id);
+                                    if ($repostPlatformAccount) {
+                                        $repostPlatformName = $repostPlatformAccount->platform->name;
+
+                                        if ($repostPlatformName === 'Facebook' && $repost->facebook_post_id && $repostPlatformAccount->access_token) {
                                             try {
-                                                $facebookService->deletePost($repost->facebook_post_id, $platformAccount->access_token);
+                                                $facebookService->deletePost($repost->facebook_post_id, $repostPlatformAccount->access_token);
                                             } catch (\Exception $e) {
                                                 Log::error("❌ Xoá repost lỗi: " . $e->getMessage());
                                             }
                                         }
+                                        // Instagram reposts cũng không thể xóa qua API
                                     }
-                                    // Instagram reposts cũng không thể xóa qua API
                                 }
                             }
                         }),

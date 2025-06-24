@@ -76,29 +76,22 @@ class PlatformResource extends Resource
                     ->label('Tên Nền Tảng')
                     ->searchable()
                     ->extraAttributes(['class' => 'font-semibold text-gray-200']),
-                // Thêm cột hiển thị ảnh logo
+                // Hiển thị ảnh logo
                 Tables\Columns\ImageColumn::make('logo')
                     ->label('Logo')
                     ->getStateUsing(function ($record) {
                         if ($record->logo) {
-                            return asset('storage/' . $record->logo); // Đảm bảo đường dẫn đúng
+                            return asset('storage/' . $record->logo);
                         }
                         return null;
                     })
-                    ->circular() // Tùy chọn: làm ảnh tròn
-                    ->extraAttributes(['class' => 'w-12 h-12 text-gray-400']), // Định kích thước ảnh
+                    ->circular() // Ảnh tròn
+                    ->extraAttributes(['class' => 'w-12 h-12 text-gray-400']),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Ngày Tạo')
                     ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->extraAttributes(['class' => 'text-gray-400']),
-                // Cột debug để kiểm tra đường dẫn
-                Tables\Columns\TextColumn::make('logo_debug')
-                    ->label('Debug Logo')
-                    ->getStateUsing(function ($record) {
-                        return $record->logo ? asset('storage/' . $record->logo) : 'No logo';
-                    })
-                    ->visible(false), // Ẩn cột này sau khi debug xong
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
