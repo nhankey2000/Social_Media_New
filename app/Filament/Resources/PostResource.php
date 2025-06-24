@@ -583,7 +583,16 @@ class PostResource extends Resource
                         'draft' => 'gray',
                         'published' => 'success',
                         'scheduled' => 'warning',
-                    }),
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'draft' => 'Nháp',
+                        'published' => 'Đã Đăng',
+                        'scheduled' => 'Hẹn Giờ',
+                        default => 'Không xác định',
+                    })
+                    ->sortable()
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('scheduled_at')
                     ->label('Giờ Đăng Lần Đầu')
                     ->dateTime('d/m/Y H:i')
@@ -612,7 +621,8 @@ class PostResource extends Resource
                         'draft' => 'Nháp',
                         'published' => 'Đã Đăng',
                         'scheduled' => 'Hẹn Giờ',
-                    ]),
+                    ])
+                    ->attribute('status'),
             ])
             ->actions([
                 TableAction::make('view_or_edit')
@@ -694,7 +704,7 @@ class PostResource extends Resource
 
                         try {
                             if ($platformName === 'Facebook') {
-                                // Xử lý Facebook như cũ
+                                // Xử lý Facebook
                                 $boldTitle = self::toBoldUnicode($title);
                                 $message = $boldTitle . "\n\n" . $content;
 
@@ -717,11 +727,15 @@ class PostResource extends Resource
                                     $facebookPostId = $facebookService->postToPage($pageId, $platformAccount->access_token, $message, $mediaData['paths']);
                                 }
 
+                                // Cập nhật trạng thái ngay sau khi đăng thành công
                                 $record->update([
                                     'facebook_post_id' => $facebookPostId,
                                     'status' => 'published',
                                     'scheduled_at' => null,
                                 ]);
+
+                                // Refresh record để đảm bảo UI cập nhật
+                                $record->refresh();
 
                             } elseif ($platformName === 'Instagram') {
                                 // Xử lý Instagram
@@ -733,11 +747,16 @@ class PostResource extends Resource
 
                                 $instagramPostId = self::postToInstagram($record, $mediaData, $message, $instagramService);
 
+                                // Cập nhật trạng thái ngay sau khi đăng thành công
                                 $record->update([
                                     'instagram_post_id' => $instagramPostId,
                                     'status' => 'published',
                                     'scheduled_at' => null,
                                 ]);
+
+                                // Refresh record để đảm bảo UI cập nhật
+                                $record->refresh();
+
                             } else {
                                 throw new \Exception('Nền tảng không được hỗ trợ: ' . $platformName);
                             }
@@ -745,7 +764,7 @@ class PostResource extends Resource
                             Notification::make()
                                 ->success()
                                 ->title('Đăng Bài Thành Công')
-                                ->body("Bài viết đã được đăng lên {$platformName}: {$platformAccount->name}.")
+                                ->body("Bài viết đã được đăng lên {$platformName}: {$platformAccount->name}. Trạng thái đã được cập nhật.")
                                 ->send();
 
                         } catch (\Exception $e) {
@@ -758,6 +777,10 @@ class PostResource extends Resource
                         }
                     })
                     ->requiresConfirmation()
+                    ->modalHeading('Xác nhận đăng bài')
+                    ->modalSubheading('Bạn có chắc chắn muốn đăng bài này ngay bây giờ?')
+                    ->modalButton('Đăng ngay')
+                    // CHỈ HIỂN THỊ KHI STATUS KHÔNG PHẢI 'published'
                     ->visible(fn(Post $record) => $record->status !== 'published'),
             ])
             ->bulkActions([
@@ -768,9 +791,12 @@ class PostResource extends Resource
                         ->action(function (Collection $records, FacebookService $facebookService, InstagramService $instagramService) {
                             $successCount = 0;
                             $errorMessages = [];
+                            $publishedCount = 0;
 
                             foreach ($records as $record) {
+                                // BỎ QUA NẾU ĐÃ ĐƯỢC ĐĂNG
                                 if ($record->status === 'published') {
+                                    $publishedCount++;
                                     continue;
                                 }
 
@@ -815,6 +841,7 @@ class PostResource extends Resource
                                             $facebookPostId = $facebookService->postToPage($pageId, $platformAccount->access_token, $message, $mediaData['paths']);
                                         }
 
+                                        // CẬP NHẬT TRẠNG THÁI NGAY SAU KHI ĐĂNG THÀNH CÔNG
                                         $record->update([
                                             'facebook_post_id' => $facebookPostId,
                                             'status' => 'published',
@@ -831,6 +858,7 @@ class PostResource extends Resource
 
                                         $instagramPostId = self::postToInstagram($record, $mediaData, $message, $instagramService);
 
+                                        // CẬP NHẬT TRẠNG THÁI NGAY SAU KHI ĐĂNG THÀNH CÔNG
                                         $record->update([
                                             'instagram_post_id' => $instagramPostId,
                                             'status' => 'published',
@@ -849,11 +877,20 @@ class PostResource extends Resource
                                 }
                             }
 
+                            // THÔNG BÁO KẾT QUẢ CHI TIẾT
                             if ($successCount > 0) {
                                 \Filament\Notifications\Notification::make()
                                     ->title('Đăng Bài Thành Công')
-                                    ->body("Đã đăng thành công {$successCount} bài viết.")
+                                    ->body("Đã đăng thành công {$successCount} bài viết. Trạng thái đã được cập nhật.")
                                     ->success()
+                                    ->send();
+                            }
+
+                            if ($publishedCount > 0) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Thông Báo')
+                                    ->body("Có {$publishedCount} bài viết đã được đăng trước đó, đã bỏ qua.")
+                                    ->warning()
                                     ->send();
                             }
 
@@ -865,14 +902,18 @@ class PostResource extends Resource
                                     ->send();
                             }
 
-                            if ($successCount === 0 && empty($errorMessages)) {
+                            if ($successCount === 0 && $publishedCount === 0 && empty($errorMessages)) {
                                 \Filament\Notifications\Notification::make()
                                     ->title('Không Có Bài Viết Nào Để Đăng')
-                                    ->body('Tất cả bài viết được chọn đã được đăng.')
+                                    ->body('Không tìm thấy bài viết nào cần đăng.')
                                     ->warning()
                                     ->send();
                             }
                         })
+                        ->requiresConfirmation()
+                        ->modalHeading('Xác nhận đăng tất cả bài viết')
+                        ->modalSubheading('Bạn có chắc chắn muốn đăng tất cả các bài viết đã chọn?')
+                        ->modalButton('Đăng tất cả')
                         ->color('success')
                         ->deselectRecordsAfterCompletion(),
 
