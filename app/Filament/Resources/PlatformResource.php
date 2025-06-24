@@ -10,6 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
+
 class PlatformResource extends Resource
 {
     protected static ?string $model = Platform::class;
@@ -19,22 +20,15 @@ class PlatformResource extends Resource
     protected static ?string $label = 'Nền Tảng';
     protected static ?string $pluralLabel = 'Nền Tảng';
 
-//  public static function canViewAny(): bool
-// {
-//     // ✅ Kiểm tra xem người dùng hiện tại có phải là admin hay không
-//     // Nếu đúng, cho phép hiển thị danh sách bản ghi của resource
-//     return Auth::user()->role === 'admin';
-// }
+//    public static function canViewAny(): bool
+//    {
+//        return Auth::user()->role === 'admin';
+//    }
 
-// /**
-//  * ✅ Tuỳ chọn: Ẩn menu điều hướng trong sidebar nếu không phải admin
-//  * (người dùng không phải admin sẽ không thấy resource này trong sidebar của Filament)
-//  */
-// public static function shouldRegisterNavigation(): bool
-// {
-//     // Chỉ hiển thị resource trên sidebar nếu người dùng là admin
-//     return Auth::user()->role === 'admin';
-// }
+//    public static function shouldRegisterNavigation(): bool
+//    {
+//        return Auth::user()->role === 'admin';
+//    }
 
     public static function form(Form $form): Form
     {
@@ -51,6 +45,15 @@ class PlatformResource extends Resource
                                     ->label('Tên Nền Tảng')
                                     ->required()
                                     ->maxLength(255)
+                                    ->extraAttributes(['class' => 'bg-gray-800 text-gray-300']),
+                                // Logo upload
+                                Forms\Components\FileUpload::make('logo')
+                                    ->label('Logo Nền Tảng')
+                                    ->image() // Chỉ cho phép upload file ảnh
+                                    ->directory('platform-logos') // Thư mục lưu trữ ảnh
+                                    ->disk('public') // Sử dụng disk public
+                                    ->nullable()
+                                    ->maxSize(1024) // Giới hạn kích thước file (1MB)
                                     ->extraAttributes(['class' => 'bg-gray-800 text-gray-300']),
                             ]),
                     ])
@@ -73,11 +76,29 @@ class PlatformResource extends Resource
                     ->label('Tên Nền Tảng')
                     ->searchable()
                     ->extraAttributes(['class' => 'font-semibold text-gray-200']),
+                // Thêm cột hiển thị ảnh logo
+                Tables\Columns\ImageColumn::make('logo')
+                    ->label('Logo')
+                    ->getStateUsing(function ($record) {
+                        if ($record->logo) {
+                            return asset('storage/' . $record->logo); // Đảm bảo đường dẫn đúng
+                        }
+                        return null;
+                    })
+                    ->circular() // Tùy chọn: làm ảnh tròn
+                    ->extraAttributes(['class' => 'w-12 h-12 text-gray-400']), // Định kích thước ảnh
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Ngày Tạo')
                     ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->extraAttributes(['class' => 'text-gray-400']),
+                // Cột debug để kiểm tra đường dẫn
+                Tables\Columns\TextColumn::make('logo_debug')
+                    ->label('Debug Logo')
+                    ->getStateUsing(function ($record) {
+                        return $record->logo ? asset('storage/' . $record->logo) : 'No logo';
+                    })
+                    ->visible(false), // Ẩn cột này sau khi debug xong
             ])
             ->actions([
                 Tables\Actions\EditAction::make()

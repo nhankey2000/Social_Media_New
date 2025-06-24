@@ -10,6 +10,7 @@ class Platform extends Model
 {
     protected $fillable = [
         'name',
+        'logo',
     ];
 
     public function platformAccounts(): HasMany
@@ -21,5 +22,5 @@ class Platform extends Model
         return $this->belongsTo(AiPostPrompt::class);
     }
 
-    
+
 }
