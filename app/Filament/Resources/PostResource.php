@@ -632,14 +632,24 @@ class PostResource extends Resource
                             if ($platformName === 'Facebook' && $record->facebook_post_id && $platformAccount->access_token) {
                                 try {
                                     $facebookService->deletePost($record->facebook_post_id, $platformAccount->access_token);
+                                    Log::info('✅ Đã xóa post Facebook thành công: ' . $record->facebook_post_id);
                                 } catch (\Exception $e) {
-                                    Log::error('Failed to delete post from Facebook: ' . $e->getMessage());
+                                    Log::error('❌ Xóa post Facebook thất bại: ' . $e->getMessage());
                                 }
                             }
 
-                            // Instagram không hỗ trợ xóa bài viết qua API
-                            if ($platformName === 'Instagram' && $record->instagram_post_id) {
-                                Log::info('Instagram post cannot be deleted via API: ' . $record->instagram_post_id);
+                            // Xóa từ Instagram nếu có - SỬ DỤNG SERVICE
+                            if ($platformName === 'Instagram' && $record->instagram_post_id && $platformAccount->access_token) {
+                                try {
+                                    $deleteResult = $instagramService->deleteInstagramPost($platformAccount, $record->instagram_post_id);
+                                    if ($deleteResult['success']) {
+                                        Log::info('✅ Đã xóa post Instagram thành công: ' . $record->instagram_post_id);
+                                    } else {
+                                        Log::warning('⚠️ Xóa post Instagram thất bại: ' . ($deleteResult['error'] ?? 'Unknown error'));
+                                    }
+                                } catch (\Exception $e) {
+                                    Log::error('❌ Xóa post Instagram thất bại: ' . $e->getMessage());
+                                }
                             }
                         }
 
@@ -652,11 +662,25 @@ class PostResource extends Resource
                                 if ($repostPlatformName === 'Facebook' && $repost->facebook_post_id && $repostPlatformAccount->access_token) {
                                     try {
                                         $facebookService->deletePost($repost->facebook_post_id, $repostPlatformAccount->access_token);
+                                        Log::info('✅ Đã xóa Facebook repost thành công: ' . $repost->facebook_post_id);
                                     } catch (\Exception $e) {
-                                        Log::error('Failed to delete repost from Facebook: ' . $e->getMessage());
+                                        Log::error('❌ Xóa Facebook repost thất bại: ' . $e->getMessage());
                                     }
                                 }
-                                // Instagram reposts cũng không thể xóa qua API
+
+                                // Xóa Instagram reposts - SỬ DỤNG SERVICE
+                                if ($repostPlatformName === 'Instagram' && $repost->instagram_post_id && $repostPlatformAccount->access_token) {
+                                    try {
+                                        $deleteResult = $instagramService->deleteInstagramPost($repostPlatformAccount, $repost->instagram_post_id);
+                                        if ($deleteResult['success']) {
+                                            Log::info('✅ Đã xóa Instagram repost thành công: ' . $repost->instagram_post_id);
+                                        } else {
+                                            Log::warning('⚠️ Xóa Instagram repost thất bại: ' . ($deleteResult['error'] ?? 'Unknown error'));
+                                        }
+                                    } catch (\Exception $e) {
+                                        Log::error('❌ Xóa Instagram repost thất bại: ' . $e->getMessage());
+                                    }
+                                }
                             }
                         }
                     }),
@@ -892,21 +916,60 @@ class PostResource extends Resource
                                 }
 
                             } elseif ($platformName === 'Instagram') {
-                                // Instagram không hỗ trợ cập nhật bài viết qua API
-                                Notification::make()
-                                    ->warning()
-                                    ->title('Thông Báo')
-                                    ->body('Instagram không hỗ trợ cập nhật bài viết qua API. Chỉ cập nhật thông tin cục bộ.')
-                                    ->send();
+                                // Sử dụng Instagram Edit Service
+                                $message = $title . "\n\n" . $content;
 
-                                // Chỉ cập nhật thông tin cục bộ
-                                $record->update([
-                                    'title' => $data['title'],
-                                    'content' => $data['content'],
-                                    'hashtags' => $data['hashtags'],
-                                    'media' => $data['media'],
-                                ]);
-                                return;
+                                if (!empty($data['hashtags'])) {
+                                    $message .= "\n" . implode(' ', $data['hashtags']);
+                                }
+
+                                // Lấy media cũ để so sánh
+                                $oldMediaUrls = [];
+                                if ($record->media) {
+                                    foreach ($record->media as $mediaPath) {
+                                        $oldMediaUrls[] = asset('storage/' . $mediaPath);
+                                    }
+                                }
+
+                                $editResult = $instagramService->editInstagramPost(
+                                    $platformAccount,
+                                    $record->instagram_post_id,
+                                    $message,
+                                    $mediaData['urls'] ?? null,
+                                    $mediaData['type'],
+                                    $oldMediaUrls
+                                );
+
+                                if ($editResult['success']) {
+                                    // Cập nhật record tùy theo action
+                                    if ($editResult['action'] === 'recreated') {
+                                        // Post đã được tạo lại với media mới
+                                        $record->update([
+                                            'instagram_post_id' => $editResult['new_post_id'],
+                                            'title' => $data['title'],
+                                            'content' => $data['content'],
+                                            'hashtags' => $data['hashtags'],
+                                            'media' => $data['media'],
+                                        ]);
+
+                                        Notification::make()
+                                            ->success()
+                                            ->title('Bài Viết Đã Được Tạo Lại')
+                                            ->body('Do thay đổi media, bài viết đã được xóa và tạo lại trên Instagram.')
+                                            ->send();
+                                        return;
+                                    } else {
+                                        // Chỉ cập nhật caption
+                                        $record->update([
+                                            'title' => $data['title'],
+                                            'content' => $data['content'],
+                                            'hashtags' => $data['hashtags'],
+                                            'media' => $data['media'],
+                                        ]);
+                                    }
+                                } else {
+                                    throw new \Exception($editResult['error']);
+                                }
                             }
 
                             Notification::make()
@@ -1097,14 +1160,24 @@ class PostResource extends Resource
                                     if ($platformName === 'Facebook' && $record->facebook_post_id && $platformAccount->access_token) {
                                         try {
                                             $facebookService->deletePost($record->facebook_post_id, $platformAccount->access_token);
+                                            Log::info('✅ Bulk delete: Đã xóa Facebook post thành công: ' . $record->facebook_post_id);
                                         } catch (\Exception $e) {
-                                            Log::error("❌ Xoá post Facebook lỗi: " . $e->getMessage());
+                                            Log::error("❌ Bulk delete: Xóa Facebook post thất bại ID {$record->id}: " . $e->getMessage());
                                         }
                                     }
 
-                                    // Instagram không hỗ trợ xóa bài viết qua API
-                                    if ($platformName === 'Instagram' && $record->instagram_post_id) {
-                                        Log::info('Instagram post cannot be deleted via API: ' . $record->instagram_post_id);
+                                    // Xóa từ Instagram nếu có - SỬ DỤNG SERVICE
+                                    if ($platformName === 'Instagram' && $record->instagram_post_id && $platformAccount->access_token) {
+                                        try {
+                                            $deleteResult = $instagramService->deleteInstagramPost($platformAccount, $record->instagram_post_id);
+                                            if ($deleteResult['success']) {
+                                                Log::info('✅ Bulk delete: Đã xóa Instagram post thành công: ' . $record->instagram_post_id);
+                                            } else {
+                                                Log::warning("⚠️ Bulk delete: Xóa Instagram post thất bại ID {$record->id}: " . ($deleteResult['error'] ?? 'Unknown error'));
+                                            }
+                                        } catch (\Exception $e) {
+                                            Log::error("❌ Bulk delete: Xóa Instagram post thất bại ID {$record->id}: " . $e->getMessage());
+                                        }
                                     }
                                 }
 
@@ -1117,11 +1190,25 @@ class PostResource extends Resource
                                         if ($repostPlatformName === 'Facebook' && $repost->facebook_post_id && $repostPlatformAccount->access_token) {
                                             try {
                                                 $facebookService->deletePost($repost->facebook_post_id, $repostPlatformAccount->access_token);
+                                                Log::info('✅ Bulk delete: Đã xóa Facebook repost thành công: ' . $repost->facebook_post_id);
                                             } catch (\Exception $e) {
-                                                Log::error("❌ Xoá repost lỗi: " . $e->getMessage());
+                                                Log::error("❌ Bulk delete: Xóa Facebook repost thất bại: " . $e->getMessage());
                                             }
                                         }
-                                        // Instagram reposts cũng không thể xóa qua API
+
+                                        // Xóa Instagram reposts - SỬ DỤNG SERVICE
+                                        if ($repostPlatformName === 'Instagram' && $repost->instagram_post_id && $repostPlatformAccount->access_token) {
+                                            try {
+                                                $deleteResult = $instagramService->deleteInstagramPost($repostPlatformAccount, $repost->instagram_post_id);
+                                                if ($deleteResult['success']) {
+                                                    Log::info('✅ Bulk delete: Đã xóa Instagram repost thành công: ' . $repost->instagram_post_id);
+                                                } else {
+                                                    Log::warning('⚠️ Bulk delete: Xóa Instagram repost thất bại: ' . ($deleteResult['error'] ?? 'Unknown error'));
+                                                }
+                                            } catch (\Exception $e) {
+                                                Log::error("❌ Bulk delete: Xóa Instagram repost thất bại: " . $e->getMessage());
+                                            }
+                                        }
                                     }
                                 }
                             }
