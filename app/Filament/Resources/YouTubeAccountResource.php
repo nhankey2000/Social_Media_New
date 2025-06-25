@@ -77,6 +77,6 @@ class YouTubeAccountResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->where('platform','YouTube');
+        return parent::getEloquentQuery()->where('platform',3);
     }
 }
