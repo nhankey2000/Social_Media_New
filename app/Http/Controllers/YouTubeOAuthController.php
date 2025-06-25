@@ -1,23 +1,22 @@
 <?php
 
 namespace App\Http\Controllers;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
 
-use Google\Client as Google_Client;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Google\Client; // ✅ Dùng đúng class Client trong namespace Google
 
 class YouTubeOAuthController extends Controller
 {
     public function redirectToGoogle()
     {
-        // Lấy từ bảng facebook_accounts, platform_id = 9 là YouTube
-        $account = DB::table('facebook_accounts')->where('platform_id', 3)->first();
+        $account = DB::table('facebook_accounts')->where('platform_id', 9)->first();
 
         if (!$account) {
             abort(404, 'YouTube account not found');
         }
 
-        $client = new Google_Client();
+        $client = new Client(); // ✅ Dùng đúng tên class
         $client->setClientId($account->app_id);
         $client->setClientSecret($account->app_secret);
         $client->setRedirectUri($account->redirect_url);
@@ -34,7 +33,7 @@ class YouTubeOAuthController extends Controller
             abort(404, 'YouTube account not found');
         }
 
-        $client = new Google_Client();
+        $client = new Client();
         $client->setClientId($account->app_id);
         $client->setClientSecret($account->app_secret);
         $client->setRedirectUri($account->redirect_url);
