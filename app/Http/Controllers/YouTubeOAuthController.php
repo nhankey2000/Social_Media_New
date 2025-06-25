@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
-use Google_Client;
+
+use Google\Client as Google_Client;
 
 class YouTubeOAuthController extends Controller
 {
