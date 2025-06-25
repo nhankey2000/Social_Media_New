@@ -27,7 +27,7 @@ class YouTubeOAuthController extends Controller
 
     public function handleGoogleCallback(Request $request)
     {
-        $account = DB::table('facebook_accounts')->where('platform_id', 9)->first();
+        $account = DB::table('facebook_accounts')->where('platform_id', 3)->first();
 
         if (!$account) {
             abort(404, 'YouTube account not found');
