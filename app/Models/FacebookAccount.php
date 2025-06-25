@@ -11,6 +11,7 @@ class FacebookAccount extends Model
         'app_id',
         'app_secret',
         'access_token',
+        'redirect_url'
     ];
     public function platform()
     {

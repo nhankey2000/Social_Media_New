@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\FacebookController;
 use App\Http\Controllers\ChatbotController;
+use App\Http\Controllers\YouTubeOAuthController;
 Route::get('/', function () {
     return view('welcome');
 });
@@ -20,3 +21,5 @@ Route::get('/admin/analytics/growth', function () {
 Route::post('/chatbot', [ChatbotController::class, 'handleMessage']);
 Route::get('/facebook/redirect', [FacebookController::class, 'redirectToFacebook'])->name('facebook.redirect');
 Route::get('/facebook/callback', [FacebookController::class, 'handleFacebookCallback'])->name('facebook.callback');
+Route::get('/youtube/auth', [YouTubeOAuthController::class, 'redirectToGoogle']);
+Route::get('/youtube/callback', [YouTubeOAuthController::class, 'handleGoogleCallback']);

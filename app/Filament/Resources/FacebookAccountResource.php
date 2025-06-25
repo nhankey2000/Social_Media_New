@@ -127,6 +127,17 @@ class FacebookAccountResource extends Resource
                             ->helperText('Secret key của ứng dụng (giữ bí mật)')
                             ->columnSpanFull(),
 
+                        Forms\Components\TextInput::make('redirect_url')
+                            ->label('Redirect URL')
+                            ->placeholder('Nhập Redirect URL từ Facebook Developer...')
+                            ->required()
+                            ->url()
+                            ->maxLength(255)
+                            ->extraAttributes([
+                                'class' => 'bg-gradient-to-r from-teal-50 to-cyan-50 border-2 border-teal-300 rounded-xl focus:border-teal-500 focus:ring-4 focus:ring-teal-100 font-mono'
+                            ])
+                            ->helperText('URL redirect được cấu hình trong Facebook Developer Console'),
+
                         Forms\Components\Textarea::make('access_token')
                             ->label('User Access Token')
                             ->placeholder('Dán User Access Token ngắn hạn tại đây...')
@@ -202,6 +213,16 @@ class FacebookAccountResource extends Resource
                     ->badge()
                     ->color('success'),
 
+                Tables\Columns\TextColumn::make('redirect_url')
+                    ->label('Redirect URL')
+                    ->limit(30)
+                    ->fontFamily('mono')
+                    ->copyable()
+                    ->copyMessage('Đã sao chép Redirect URL!')
+                    ->badge()
+                    ->color('info')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Ngày Tạo')
                     ->dateTime('d/m/Y H:i')
@@ -219,6 +240,7 @@ class FacebookAccountResource extends Resource
                     ->color('gray')
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('redirect_url', 'asc') // Sắp xếp mặc định theo redirect_url tăng dần
             ->filters([
                 Tables\Filters\SelectFilter::make('platform_id')
                     ->label('Lọc theo nền tảng')
@@ -274,7 +296,10 @@ class FacebookAccountResource extends Resource
                                         $record->app_secret
                                     );
 
-                                    $record->update(['access_token' => $longLivedToken]);
+                                    $record->update([
+                                        'access_token' => $longLivedToken,
+                                        'redirect_url' => $record->redirect_url, // Giữ nguyên redirect_url
+                                    ]);
 
                                     $pageCount = 0;
                                     foreach ($pages as $page) {
@@ -314,7 +339,10 @@ class FacebookAccountResource extends Resource
                                         $record->app_secret
                                     );
 
-                                    $record->update(['access_token' => $longLivedToken]);
+                                    $record->update([
+                                        'access_token' => $longLivedToken,
+                                        'redirect_url' => $record->redirect_url, // Giữ nguyên redirect_url
+                                    ]);
 
                                     $accountCount = 0;
                                     foreach ($accounts as $account) {
@@ -371,7 +399,10 @@ class FacebookAccountResource extends Resource
                                     $record->app_secret
                                 );
 
-                                $record->update(['access_token' => $newToken]);
+                                $record->update([
+                                    'access_token' => $newToken,
+                                    'redirect_url' => $record->redirect_url, // Giữ nguyên redirect_url
+                                ]);
 
                                 Notification::make()
                                     ->title('Thành Công!')
@@ -432,7 +463,10 @@ class FacebookAccountResource extends Resource
                                         $record->app_secret
                                     );
 
-                                    $record->update(['access_token' => $newToken]);
+                                    $record->update([
+                                        'access_token' => $newToken,
+                                        'redirect_url' => $record->redirect_url, // Giữ nguyên redirect_url
+                                    ]);
                                     $successCount++;
 
                                 } catch (\Exception $e) {
@@ -461,7 +495,7 @@ class FacebookAccountResource extends Resource
             ->emptyStateDescription('Hãy thêm tài khoản Facebook đầu tiên để bắt đầu quản lý trang!')
             ->emptyStateIcon('heroicon-o-building-office-2')
             ->striped()
-            ->defaultSort('created_at', 'desc')
+            ->defaultSort('redirect_url', 'asc') // Sắp xếp mặc định theo redirect_url tăng dần
             ->recordUrl(null)
             ->poll('300s'); // Auto refresh every 5 minutes
     }
@@ -492,6 +526,6 @@ class FacebookAccountResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['app_id', 'platform.name'];
+        return ['app_id', 'platform.name', 'redirect_url'];
     }
 }
