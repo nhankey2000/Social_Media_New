@@ -27,13 +27,13 @@ class YouTubeOAuthController extends Controller
 
     public function handleGoogleCallback(Request $request)
     {
-        $account = DB::table('platform_accounts')->where('platform_id', 3)->first(); // hoặc 9 nếu bạn để YouTube là 9
+        $account = DB::table('facebook_accounts')->where('platform_id', 3)->first();
 
         if (!$account) {
             abort(404, 'YouTube account not found');
         }
 
-        $client = new \Google_Client();
+        $client = new Google_Client();
         $client->setClientId($account->app_id);
         $client->setClientSecret($account->app_secret);
         $client->setRedirectUri($account->redirect_url);
@@ -41,16 +41,10 @@ class YouTubeOAuthController extends Controller
 
         $token = $client->getAccessToken();
 
-        DB::table('platform_accounts')
+        DB::table('facebook_accounts')
             ->where('id', $account->id)
-            ->update([
-                'access_token' => $token['access_token'] ?? null,
-                'refresh_token' => $token['refresh_token'] ?? null,
-                'expires_at' => now()->addSeconds($token['expires_in'] ?? 3600),
-                'updated_at' => now(),
-            ]);
+            ->update(['access_token' => json_encode($token)]);
 
         return redirect('/')->with('success', 'YouTube connected successfully.');
     }
-
 }
