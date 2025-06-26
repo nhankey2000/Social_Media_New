@@ -44,7 +44,7 @@ class YouTubeVideoResource extends Resource
                                     ->label('Kênh YouTube')
                                     ->required()
                                     ->options(
-                                        PlatformAccount::where('platform_id', 3)->pluck('name', 'id') // Chỉ lấy platform_id = 3 (YouTube)
+                                        PlatformAccount::where('platform_id', 3)->pluck('name', 'id')
                                     )
                                     ->searchable()
                                     ->preload()
@@ -216,7 +216,7 @@ class YouTubeVideoResource extends Resource
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\Action::make('upload_video')
                         ->label('Đăng Lên YouTube')
-                        ->icon('heroicon-o-upload')
+                        ->icon('heroicon-o-arrow-up') // Thay đổi icon thành heroicon-o-arrow-up
                         ->color('success')
                         ->requiresConfirmation()
                         ->modalHeading('Đăng Video Lên YouTube')
