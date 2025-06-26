@@ -21,6 +21,8 @@ class YouTubeOAuthController extends Controller
         $client->setClientId($account->app_id);
         $client->setClientSecret($account->app_secret);
         $client->setRedirectUri($account->redirect_url);
+        $client->setAccessType('offline');
+        $client->setPrompt('consent');
         $client->addScope('https://www.googleapis.com/auth/youtube.readonly');
         $client->addScope('https://www.googleapis.com/auth/youtube.upload');
         $client->addScope('https://www.googleapis.com/auth/userinfo.email');
