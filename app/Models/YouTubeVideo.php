@@ -13,6 +13,7 @@ class YouTubeVideo extends Model
         'platform_account_id',
         'video_id',
         'title',
+        'video_file'
         'description',
         'category_id',
         'status',
