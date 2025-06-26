@@ -216,7 +216,7 @@ class YouTubeVideoResource extends Resource
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\Action::make('upload_video')
                         ->label('Đăng Lên YouTube')
-                        ->icon('heroicon-o-cloud-arrow-up')
+                        ->icon('heroicon-o-cloud-upload')
                         ->color('success')
                         ->requiresConfirmation()
                         ->modalHeading('Đăng Video Lên YouTube')
