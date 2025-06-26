@@ -67,6 +67,6 @@ class YouTubeOAuthController extends Controller
                 ]
             );
 
-        return redirect('/')->with('success', 'YouTube connected successfully.');
+        return redirect('/admin/platform-accounts')->with('success', 'YouTube connected successfully.');
     }
 }
