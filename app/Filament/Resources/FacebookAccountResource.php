@@ -49,7 +49,7 @@ class FacebookAccountResource extends Resource
                                     ->extraAttributes([
                                         'class' => 'bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100'
                                     ])
-                                    ->helperText('Chọn nền tảng mạng xã hội (Facebook, Instagram)')
+                                    ->helperText('Chọn nền tảng mạng xã hội (Facebook, Instagram, YouTube)')
                                     ->afterStateUpdated(function ($state, callable $set) {
                                         // Optional: Handle state update if needed
                                     })
@@ -67,7 +67,7 @@ class FacebookAccountResource extends Resource
                                                     ->label('Tên Nền Tảng')
                                                     ->required()
                                                     ->maxLength(255)
-                                                    ->placeholder('Ví dụ: Facebook, Instagram, TikTok...')
+                                                    ->placeholder('Ví dụ: Facebook, Instagram, YouTube...')
                                                     ->extraAttributes([
                                                         'class' => 'bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg focus:border-green-500 focus:ring-green-200'
                                                     ])
@@ -104,19 +104,19 @@ class FacebookAccountResource extends Resource
                                     ]),
 
                                 Forms\Components\TextInput::make('app_id')
-                                    ->label('Facebook App ID')
-                                    ->placeholder('Nhập App ID từ Facebook Developer...')
+                                    ->label('App ID')
+                                    ->placeholder('Nhập App ID từ Developer Console...')
                                     ->required()
                                     ->maxLength(255)
                                     ->extraAttributes([
                                         'class' => 'bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 font-mono'
                                     ])
-                                    ->helperText('ID ứng dụng từ Facebook Developer Console'),
+                                    ->helperText('ID ứng dụng từ Developer Console (Facebook hoặc Google)'),
                             ]),
 
                         Forms\Components\TextInput::make('app_secret')
-                            ->label('Facebook App Secret')
-                            ->placeholder('Nhập App Secret từ Facebook Developer...')
+                            ->label('App Secret')
+                            ->placeholder('Nhập App Secret từ Developer Console...')
                             ->required()
                             ->password()
                             ->revealable()
@@ -129,14 +129,14 @@ class FacebookAccountResource extends Resource
 
                         Forms\Components\TextInput::make('redirect_url')
                             ->label('Redirect URL')
-                            ->placeholder('Nhập Redirect URL từ Facebook Developer...')
+                            ->placeholder('Nhập Redirect URL từ Developer Console...')
                             ->required()
                             ->url()
                             ->maxLength(255)
                             ->extraAttributes([
                                 'class' => 'bg-gradient-to-r from-teal-50 to-cyan-50 border-2 border-teal-300 rounded-xl focus:border-teal-500 focus:ring-4 focus:ring-teal-100 font-mono'
                             ])
-                            ->helperText('URL redirect được cấu hình trong Facebook Developer Console'),
+                            ->helperText('URL redirect được cấu hình trong Developer Console'),
 
                         Forms\Components\Textarea::make('access_token')
                             ->label('User Access Token')
@@ -146,7 +146,7 @@ class FacebookAccountResource extends Resource
                             ->extraAttributes([
                                 'class' => 'bg-gradient-to-br from-green-50 to-teal-50 border-2 border-green-300 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-100 font-mono text-sm resize-none'
                             ])
-                            ->helperText('Token ngắn hạn để lấy danh sách Page (sẽ được chuyển thành long-lived token)')
+                            ->helperText('Token ngắn hạn để lấy danh sách Page/Channel (sẽ được chuyển thành long-lived token)')
                             ->columnSpanFull(),
                     ])
                     ->collapsible()
@@ -240,7 +240,7 @@ class FacebookAccountResource extends Resource
                     ->color('gray')
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->defaultSort('redirect_url', 'asc') // Sắp xếp mặc định theo redirect_url tăng dần
+            ->defaultSort('redirect_url', 'asc')
             ->filters([
                 Tables\Filters\SelectFilter::make('platform_id')
                     ->label('Lọc theo nền tảng')
@@ -272,18 +272,21 @@ class FacebookAccountResource extends Resource
                         ->color('success')
                         ->requiresConfirmation()
                         ->modalHeading('Lấy Danh Sách Trang/Tài Khoản')
-                        ->modalDescription('Hệ thống sẽ sử dụng Access Token để lấy danh sách trang Facebook hoặc tài khoản Instagram.')
+                        ->modalDescription('Hệ thống sẽ sử dụng Access Token để lấy danh sách trang, tài khoản hoặc channel.')
                         ->modalSubmitActionLabel('Bắt Đầu Lấy Dữ Liệu')
                         ->action(function (FacebookAccount $record) {
                             try {
                                 $platform = Platform::find($record->platform_id);
-                                $facebookService = new FacebookService();
-                                $tempPlatformAccount = new PlatformAccount([
-                                    'access_token' => $record->access_token,
-                                    'is_active' => true,
-                                ]);
 
-                                if ($platform->name === 'Facebook') {
+                                if ($platform->id === 3) { // YouTube (platform_id = 3)
+                                    return redirect()->away('http://social.thanhlc.top:8000/youtube/auth');
+                                } elseif ($platform->name === 'Facebook') {
+                                    $facebookService = new FacebookService();
+                                    $tempPlatformAccount = new PlatformAccount([
+                                        'access_token' => $record->access_token,
+                                        'is_active' => true,
+                                    ]);
+
                                     $pages = $facebookService->fetchUserPages(
                                         $tempPlatformAccount,
                                         $record->app_id,
@@ -298,7 +301,7 @@ class FacebookAccountResource extends Resource
 
                                     $record->update([
                                         'access_token' => $longLivedToken,
-                                        'redirect_url' => $record->redirect_url, // Giữ nguyên redirect_url
+                                        'redirect_url' => $record->redirect_url,
                                     ]);
 
                                     $pageCount = 0;
@@ -325,8 +328,13 @@ class FacebookAccountResource extends Resource
                                         ->success()
                                         ->duration(8000)
                                         ->send();
-
                                 } elseif ($platform->name === 'Instagram') {
+                                    $facebookService = new FacebookService();
+                                    $tempPlatformAccount = new PlatformAccount([
+                                        'access_token' => $record->access_token,
+                                        'is_active' => true,
+                                    ]);
+
                                     $accounts = $facebookService->fetchInstagramAccounts(
                                         $tempPlatformAccount,
                                         $record->app_id,
@@ -341,7 +349,7 @@ class FacebookAccountResource extends Resource
 
                                     $record->update([
                                         'access_token' => $longLivedToken,
-                                        'redirect_url' => $record->redirect_url, // Giữ nguyên redirect_url
+                                        'redirect_url' => $record->redirect_url,
                                     ]);
 
                                     $accountCount = 0;
@@ -368,11 +376,9 @@ class FacebookAccountResource extends Resource
                                         ->success()
                                         ->duration(8000)
                                         ->send();
-
                                 } else {
                                     throw new \Exception('Nền tảng "' . $platform->name . '" chưa được hỗ trợ.');
                                 }
-
                             } catch (\Exception $e) {
                                 Notification::make()
                                     ->title('Lỗi Khi Lấy Dữ Liệu!')
@@ -389,7 +395,7 @@ class FacebookAccountResource extends Resource
                         ->color('primary')
                         ->requiresConfirmation()
                         ->modalHeading('Làm Mới Access Token')
-                        ->modalDescription('Gia hạn Access Token để duy trì kết nối với Facebook API.')
+                        ->modalDescription('Gia hạn Access Token để duy trì kết nối với API.')
                         ->action(function (FacebookAccount $record) {
                             try {
                                 $facebookService = new FacebookService();
@@ -401,7 +407,7 @@ class FacebookAccountResource extends Resource
 
                                 $record->update([
                                     'access_token' => $newToken,
-                                    'redirect_url' => $record->redirect_url, // Giữ nguyên redirect_url
+                                    'redirect_url' => $record->redirect_url,
                                 ]);
 
                                 Notification::make()
@@ -410,7 +416,6 @@ class FacebookAccountResource extends Resource
                                     ->success()
                                     ->duration(5000)
                                     ->send();
-
                             } catch (\Exception $e) {
                                 Notification::make()
                                     ->title('Lỗi!')
@@ -433,7 +438,7 @@ class FacebookAccountResource extends Resource
                         ->icon('heroicon-o-trash')
                         ->color('danger')
                         ->requiresConfirmation()
-                        ->modalHeading('Xóa Tài Khoản Facebook')
+                        ->modalHeading('Xóa Tài Khoản')
                         ->modalDescription('Bạn có chắc chắn muốn xóa tài khoản này? Tất cả trang được quản lý sẽ bị ảnh hưởng.'),
 
                 ])->tooltip('Tùy chọn')
@@ -465,10 +470,9 @@ class FacebookAccountResource extends Resource
 
                                     $record->update([
                                         'access_token' => $newToken,
-                                        'redirect_url' => $record->redirect_url, // Giữ nguyên redirect_url
+                                        'redirect_url' => $record->redirect_url,
                                     ]);
                                     $successCount++;
-
                                 } catch (\Exception $e) {
                                     $errorCount++;
                                 }
@@ -484,27 +488,25 @@ class FacebookAccountResource extends Resource
 
                     Tables\Actions\DeleteBulkAction::make()
                         ->label('Xóa Tất Cả Đã Chọn')
-                        ->modalHeading('Xóa Các Tài Khoản Facebook')
+                        ->modalHeading('Xóa Các Tài Khoản')
                         ->modalSubheading('Bạn có chắc chắn muốn xóa các tài khoản này? Hành động này không thể hoàn tác.')
                         ->modalButton('Xác Nhận Xóa')
                         ->color('danger'),
-
                 ])->label('Hành Động Hàng Loạt'),
             ])
-            ->emptyStateHeading('Chưa có tài khoản Facebook nào')
-            ->emptyStateDescription('Hãy thêm tài khoản Facebook đầu tiên để bắt đầu quản lý trang!')
+            ->emptyStateHeading('Chưa có tài khoản nào')
+            ->emptyStateDescription('Hãy thêm tài khoản đầu tiên để bắt đầu quản lý trang!')
             ->emptyStateIcon('heroicon-o-building-office-2')
             ->striped()
-            ->defaultSort('redirect_url', 'asc') // Sắp xếp mặc định theo redirect_url tăng dần
+            ->defaultSort('redirect_url', 'asc')
             ->recordUrl(null)
-            ->poll('300s'); // Auto refresh every 5 minutes
+            ->poll('300s');
     }
 
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListFacebookAccounts::route('/'),
-            // 'create' => Pages\CreateFacebookAccount::route('/create'),
             'edit' => Pages\EditFacebookAccount::route('/{record}/edit'),
         ];
     }
