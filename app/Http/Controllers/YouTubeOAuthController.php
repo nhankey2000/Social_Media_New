@@ -27,6 +27,7 @@ class YouTubeOAuthController extends Controller
         $client->addScope('https://www.googleapis.com/auth/youtube.upload');
         $client->addScope('https://www.googleapis.com/auth/userinfo.email');
         $client->addScope('https://www.googleapis.com/auth/userinfo.profile');
+        $client->addScope('https://www.googleapis.com/auth/youtube.force-ssl');
         return redirect($client->createAuthUrl());
     }
 
