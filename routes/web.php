@@ -26,19 +26,20 @@ Route::get('/youtube/auth', [YouTubeOAuthController::class, 'redirectToGoogle'])
 Route::get('/youtube/callback', [YouTubeOAuthController::class, 'handleGoogleCallback']);
 
 
-Route::get('/admin/youtube-videos/{record}/video', function (YouTubeVideo $record) {
-    if (!$record->video_file || !Storage::disk('local')->exists($record->video_file)) {
+Route::get('/storage/youtube-videos/{filename}', function ($filename) {
+    $path = 'youtube-videos/' . $filename;
+
+    if (!Storage::disk('local')->exists($path)) {
         abort(404, 'Video file not found');
     }
 
-    $path = $record->video_file;
     $file = Storage::disk('local')->get($path);
     $mimeType = Storage::disk('local')->mimeType($path);
-    $filename = basename($path);
 
     return Response::make($file, 200, [
         'Content-Type' => $mimeType,
         'Content-Disposition' => 'inline; filename="' . $filename . '"',
         'Accept-Ranges' => 'bytes',
+        'Cache-Control' => 'public, max-age=3600',
     ]);
-})->name('filament.admin.resources.you-tube-videos.video');
+})->name('storage.youtube-videos');

@@ -524,34 +524,86 @@ class YouTubeVideoResource extends Resource
                             ->color(fn($state) => $state ? 'success' : 'gray')
                             ->icon(fn($state) => $state ? 'heroicon-o-document-text' : 'heroicon-o-x-circle'),
 
-                        Infolists\Components\TextEntry::make('file_size')
+                        Infolists\Components\TextEntry::make('file_info')
                             ->label('Kích Thước File')
-                            ->formatStateUsing(function ($record) {
-                                if (!$record->video_file || !Storage::disk('local')->exists($record->video_file)) {
+                            ->state(function ($record) {
+                                if (!$record->video_file) {
                                     return 'Không có file';
                                 }
-                                $size = Storage::disk('local')->size($record->video_file);
-                                return number_format($size / (1024 * 1024), 2) . ' MB';
+
+                                try {
+                                    if (Storage::disk('local')->exists($record->video_file)) {
+                                        $size = Storage::disk('local')->size($record->video_file);
+                                        return number_format($size / (1024 * 1024), 2) . ' MB';
+                                    }
+                                } catch (\Exception $e) {
+                                    // File exists but can't get size
+                                }
+
+                                return 'File không tồn tại';
                             })
                             ->badge()
-                            ->color('info')
+                            ->color(function ($record) {
+                                if (!$record->video_file) return 'gray';
+                                try {
+                                    return Storage::disk('local')->exists($record->video_file) ? 'info' : 'danger';
+                                } catch (\Exception $e) {
+                                    return 'danger';
+                                }
+                            })
                             ->icon('heroicon-o-server'),
 
-                        Infolists\Components\TextEntry::make('video_url')
-                            ->label('Xem Video')
-                            ->formatStateUsing(fn($record) => $record->video_file ? 'Nhấn để xem video' : 'Không có file video')
+                        Infolists\Components\TextEntry::make('video_download')
+                            ->label('Tải Xuống Video')
+                            ->state(function ($record) {
+                                if (!$record->video_file) {
+                                    return 'Không có file video';
+                                }
+
+                                try {
+                                    if (Storage::disk('local')->exists($record->video_file)) {
+                                        return 'Nhấn để tải xuống video';
+                                    }
+                                } catch (\Exception $e) {
+                                    // Handle error
+                                }
+
+                                return 'File không tồn tại';
+                            })
                             ->url(function ($record) {
-                                if (!$record->video_file || !Storage::disk('local')->exists($record->video_file)) {
+                                if (!$record->video_file) {
                                     return null;
                                 }
-                                // Tạo URL để download hoặc xem file
-                                return route('filament.admin.resources.you-tube-videos.video', $record);
+
+                                try {
+                                    if (Storage::disk('local')->exists($record->video_file)) {
+                                        return url('/storage/youtube-videos/' . basename($record->video_file));
+                                    }
+                                } catch (\Exception $e) {
+                                    // Handle error
+                                }
+
+                                return null;
                             })
                             ->openUrlInNewTab()
                             ->badge()
-                            ->color('success')
-                            ->icon('heroicon-o-play')
-                            ->visible(fn($record) => !is_null($record->video_file) && Storage::disk('local')->exists($record->video_file)),
+                            ->color(function ($record) {
+                                if (!$record->video_file) return 'gray';
+                                try {
+                                    return Storage::disk('local')->exists($record->video_file) ? 'success' : 'gray';
+                                } catch (\Exception $e) {
+                                    return 'gray';
+                                }
+                            })
+                            ->icon('heroicon-o-arrow-down-tray')
+                            ->visible(function ($record) {
+                                if (!$record->video_file) return false;
+                                try {
+                                    return Storage::disk('local')->exists($record->video_file);
+                                } catch (\Exception $e) {
+                                    return false;
+                                }
+                            }),
                     ])
                     ->collapsible(),
             ]);
