@@ -16,7 +16,20 @@ class Kernel extends ConsoleKernel
         $schedule->command('prompts:process')->everyMinute();
         $schedule->command('analytics:sync')->everyMinute();
         $schedule->command('instagram:process')->everyMinute();
+        // ========== THÊM COMMAND YOUTUBE ==========
+        $schedule->command('youtube:upload-scheduled --limit=10')
+            ->everyMinute()
+            ->withoutOverlapping(10) // Tránh chạy đồng thời, timeout 10 phút
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/youtube-scheduler.log'));
 
+        // Log hoạt động YouTube scheduler
+        $schedule->call(function () {
+            $pendingCount = \App\Models\YouTubeVideo::pendingUpload()->count();
+            if ($pendingCount > 0) {
+                Log::info("📹 YouTube Scheduler: Có {$pendingCount} video đang chờ upload");
+            }
+        })->everyFiveMinutes();
     }
 
     protected function commands(): void
