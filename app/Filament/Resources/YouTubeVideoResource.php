@@ -531,13 +531,9 @@ class YouTubeVideoResource extends Resource
                                     return 'Không có file';
                                 }
 
-                                try {
-                                    if (Storage::disk('local')->exists($record->video_file)) {
-                                        $size = Storage::disk('local')->size($record->video_file);
-                                        return number_format($size / (1024 * 1024), 2) . ' MB';
-                                    }
-                                } catch (\Exception $e) {
-                                    // File exists but can't get size
+                                if (Storage::disk('local')->exists($record->video_file)) {
+                                    $size = Storage::disk('local')->size($record->video_file);
+                                    return number_format($size / (1024 * 1024), 2) . ' MB';
                                 }
 
                                 return 'File không tồn tại';
@@ -545,65 +541,88 @@ class YouTubeVideoResource extends Resource
                             ->badge()
                             ->color(function ($record) {
                                 if (!$record->video_file) return 'gray';
-                                try {
-                                    return Storage::disk('local')->exists($record->video_file) ? 'info' : 'danger';
-                                } catch (\Exception $e) {
-                                    return 'danger';
-                                }
+                                return Storage::disk('local')->exists($record->video_file) ? 'info' : 'danger';
                             })
                             ->icon('heroicon-o-server'),
 
-                        Infolists\Components\TextEntry::make('video_download')
-                            ->label('Tải Xuống Video')
+                        Infolists\Components\TextEntry::make('video_player')
+                            ->label('Video Preview')
+                            ->html()
                             ->state(function ($record) {
-                                if (!$record->video_file) {
-                                    return 'Không có file video';
+                                if (!$record->video_file || !Storage::disk('local')->exists($record->video_file)) {
+                                    return '<div class="bg-gray-100 dark:bg-gray-800 rounded-xl p-8 text-center border-2 border-dashed border-gray-300 dark:border-gray-600">
+                                        <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <h3 class="text-lg font-semibold text-gray-600 dark:text-gray-300 mb-2">Không có video</h3>
+                                        <p class="text-gray-500 dark:text-gray-400">File video không tồn tại hoặc đã bị xóa.</p>
+                                    </div>';
                                 }
 
-                                try {
-                                    if (Storage::disk('local')->exists($record->video_file)) {
-                                        return 'Nhấn để tải xuống video';
-                                    }
-                                } catch (\Exception $e) {
-                                    // Handle error
-                                }
+                                $filename = basename($record->video_file);
+                                $videoUrl = url('/storage/youtube-videos/' . $filename);
 
-                                return 'File không tồn tại';
+                                return '<div class="bg-gray-900 rounded-xl overflow-hidden shadow-2xl border border-gray-700">
+                                    <div class="bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-3">
+                                        <div class="flex items-center space-x-2">
+                                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            <h3 class="text-white font-semibold">' . htmlspecialchars($record->title) . '</h3>
+                                        </div>
+                                    </div>
+
+                                    <div class="p-4">
+                                        <video
+                                            controls
+                                            preload="metadata"
+                                            class="w-full h-auto rounded-lg shadow-lg bg-black"
+                                            style="max-height: 500px;"
+                                            controlsList="nodownload"
+                                        >
+                                            <source src="' . $videoUrl . '" type="video/mp4">
+                                            <source src="' . $videoUrl . '" type="video/webm">
+                                            <source src="' . $videoUrl . '" type="video/mpeg">
+                                            Trình duyệt của bạn không hỗ trợ thẻ video.
+                                        </video>
+                                    </div>
+
+                                    <div class="px-4 pb-4">
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-400">
+                                            <div class="flex items-center space-x-2">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                </svg>
+                                                <span>' . htmlspecialchars($filename) . '</span>
+                                            </div>
+                                            <div class="flex items-center space-x-2">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                                                </svg>
+                                                <span>' . number_format(Storage::disk('local')->size($record->video_file) / (1024 * 1024), 2) . ' MB</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>';
                             })
-                            ->url(function ($record) {
-                                if (!$record->video_file) {
-                                    return null;
-                                }
+                            ->columnSpanFull(),
 
-                                try {
-                                    if (Storage::disk('local')->exists($record->video_file)) {
+                        Infolists\Components\Actions::make([
+                            Infolists\Components\Actions\Action::make('download_video')
+                                ->label('Tải Xuống Video')
+                                ->icon('heroicon-o-arrow-down-tray')
+                                ->color('success')
+                                ->url(function ($record) {
+                                    if ($record->video_file && Storage::disk('local')->exists($record->video_file)) {
                                         return url('/storage/youtube-videos/' . basename($record->video_file));
                                     }
-                                } catch (\Exception $e) {
-                                    // Handle error
-                                }
-
-                                return null;
-                            })
-                            ->openUrlInNewTab()
-                            ->badge()
-                            ->color(function ($record) {
-                                if (!$record->video_file) return 'gray';
-                                try {
-                                    return Storage::disk('local')->exists($record->video_file) ? 'success' : 'gray';
-                                } catch (\Exception $e) {
-                                    return 'gray';
-                                }
-                            })
-                            ->icon('heroicon-o-arrow-down-tray')
-                            ->visible(function ($record) {
-                                if (!$record->video_file) return false;
-                                try {
-                                    return Storage::disk('local')->exists($record->video_file);
-                                } catch (\Exception $e) {
-                                    return false;
-                                }
-                            }),
+                                    return null;
+                                })
+                                ->openUrlInNewTab()
+                                ->visible(function ($record) {
+                                    return $record->video_file && Storage::disk('local')->exists($record->video_file);
+                                }),
+                        ]),
                     ])
                     ->collapsible(),
             ]);
