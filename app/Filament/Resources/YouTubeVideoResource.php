@@ -46,7 +46,7 @@ class YouTubeVideoResource extends Resource
                                     ->label('Kênh YouTube')
                                     ->required()
                                     ->options(
-                                        PlatformAccount::where('platform_id', 3)->pluck('name', 'id') // Chỉ lấy platform_id = 3 (YouTube)
+                                        PlatformAccount::where('platform_id', 3)->pluck('name', 'id')
                                     )
                                     ->searchable()
                                     ->preload()
@@ -78,31 +78,49 @@ class YouTubeVideoResource extends Resource
                             ->helperText('Mô tả tối đa 5000 ký tự')
                             ->columnSpanFull(),
 
-                        Forms\Components\Select::make('category_id')
-                            ->label('Danh Mục Video')
-                            ->options([
-                                '1' => 'Film & Animation',
-                                '2' => 'Autos & Vehicles',
-                                '10' => 'Music',
-                                '15' => 'Pets & Animals',
-                                '17' => 'Sports',
-                                '19' => 'Travel & Events',
-                                '20' => 'Gaming',
-                                '22' => 'People & Blogs',
-                                '23' => 'Comedy',
-                                '24' => 'Entertainment',
-                                '25' => 'News & Politics',
-                                '26' => 'Howto & Style',
-                                '27' => 'Education',
-                                '28' => 'Science & Technology',
-                                '29' => 'Nonprofits & Activism',
-                            ])
-                            ->required()
-                            ->default('22')
-                            ->extraAttributes([
-                                'class' => 'bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-xl focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100'
-                            ])
-                            ->helperText('Chọn danh mục phù hợp cho video'),
+                        Forms\Components\Grid::make(2)
+                            ->schema([
+                                Forms\Components\Select::make('category_id')
+                                    ->label('Danh Mục Video')
+                                    ->options([
+                                        '1' => 'Film & Animation',
+                                        '2' => 'Autos & Vehicles',
+                                        '10' => 'Music',
+                                        '15' => 'Pets & Animals',
+                                        '17' => 'Sports',
+                                        '19' => 'Travel & Events',
+                                        '20' => 'Gaming',
+                                        '22' => 'People & Blogs',
+                                        '23' => 'Comedy',
+                                        '24' => 'Entertainment',
+                                        '25' => 'News & Politics',
+                                        '26' => 'Howto & Style',
+                                        '27' => 'Education',
+                                        '28' => 'Science & Technology',
+                                        '29' => 'Nonprofits & Activism',
+                                    ])
+                                    ->required()
+                                    ->default('22')
+                                    ->extraAttributes([
+                                        'class' => 'bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-xl focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100'
+                                    ])
+                                    ->helperText('Chọn danh mục phù hợp cho video'),
+
+                                Forms\Components\Select::make('status')
+                                    ->label('Trạng Thái Video')
+                                    ->options([
+                                        'public' => 'Công khai',
+                                        'private' => 'Riêng tư',
+                                        'unlisted' => 'Không công khai',
+                                    ])
+                                    ->required()
+                                    ->default('public')
+                                    ->extraAttributes([
+                                        'class' => 'bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-300 rounded-xl focus:border-red-500 focus:ring-4 focus:ring-red-100'
+                                    ])
+                                    ->helperText('Chọn trạng thái hiển thị của video'),
+                            ]),
+
                         Forms\Components\FileUpload::make('video_file')
                             ->label('File Video')
                             ->required()
@@ -116,32 +134,28 @@ class YouTubeVideoResource extends Resource
                             ->helperText('File video MP4, MPEG hoặc WebM, tối đa 1GB')
                             ->columnSpanFull(),
 
-// ========== THÊM FIELD LỊCH ĐĂNG MỚI ==========
                         Forms\Components\DateTimePicker::make('scheduled_at')
                             ->label('Lịch Đăng Video')
                             ->placeholder('Chọn thời gian đăng video...')
                             ->seconds(false)
-                            ->minDate(now())
+                            ->minDate(now()->addMinutes(1))
+                            ->maxDate(now()->addYear())
                             ->displayFormat('d/m/Y H:i')
+                            ->format('Y-m-d H:i:s')
                             ->timezone('Asia/Ho_Chi_Minh')
+                            ->native(false)
                             ->extraAttributes([
                                 'class' => 'bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-300 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100'
                             ])
-                            ->helperText('Để trống nếu muốn đăng ngay lập tức. Video sẽ tự động được đăng vào thời gian đã chọn.')
-                            ->columnSpanFull(),
-                        Forms\Components\Select::make('status')
-                            ->label('Trạng Thái Video')
-                            ->options([
-                                'public' => 'Công khai',
-                                'private' => 'Riêng tư',
-                                'unlisted' => 'Không công khai',
-                            ])
-                            ->required()
-                            ->default('public')
-                            ->extraAttributes([
-                                'class' => 'bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-300 rounded-xl focus:border-red-500 focus:ring-4 focus:ring-red-100'
-                            ])
-                            ->helperText('Chọn trạng thái hiển thị của video'),
+                            ->helperText('Để trống nếu muốn đăng ngay lập tức. Chọn thời gian ít nhất 1 phút sau hiện tại.')
+                            ->columnSpanFull()
+                            ->live()
+                            ->afterStateUpdated(function ($state, $set) {
+                                if ($state && $state <= now()) {
+                                    $set('scheduled_at', null);
+                                }
+                            }),
+                    ])
                     ->collapsible()
                     ->collapsed(false)
                     ->extraAttributes([
@@ -166,11 +180,10 @@ class YouTubeVideoResource extends Resource
                     ->label('Tiêu Đề Video')
                     ->sortable()
                     ->searchable()
-                    ->limit(30)
+                    ->limit(25)
                     ->badge()
                     ->color('secondary'),
 
-                // ========== THÊM CỘT LỊCH ĐĂNG ==========
                 Tables\Columns\TextColumn::make('scheduled_at')
                     ->label('Lịch Đăng')
                     ->dateTime('d/m/Y H:i')
@@ -195,13 +208,12 @@ class YouTubeVideoResource extends Resource
                         return 'Sẵn sàng để đăng';
                     }),
 
-                // ========== THÊM CỘT TRẠNG THÁI UPLOAD ==========
                 Tables\Columns\TextColumn::make('upload_status_text')
                     ->label('Trạng Thái Upload')
                     ->badge()
                     ->color(fn($record) => $record->upload_status_color)
                     ->icon(function ($record) {
-                        return match($record->upload_status) {
+                        return match($record->upload_status ?? 'pending') {
                             'pending' => 'heroicon-o-clock',
                             'uploading' => 'heroicon-o-arrow-up',
                             'uploaded' => 'heroicon-o-check-circle',
@@ -217,7 +229,7 @@ class YouTubeVideoResource extends Resource
                             return 'Không có file';
                         }
                         $fileName = basename($state);
-                        return strlen($fileName) > 20 ? substr($fileName, 0, 17) . '...' : $fileName;
+                        return strlen($fileName) > 15 ? substr($fileName, 0, 12) . '...' : $fileName;
                     })
                     ->badge()
                     ->color(fn($state) => $state ? 'success' : 'gray')
@@ -235,7 +247,7 @@ class YouTubeVideoResource extends Resource
                     ->url(fn($record) => $record->video_id ? "https://www.youtube.com/watch?v={$record->video_id}" : null)
                     ->openUrlInNewTab()
                     ->placeholder('Chưa đăng')
-                    ->limit(15),
+                    ->limit(12),
 
                 Tables\Columns\TextColumn::make('status')
                     ->label('Trạng Thái')
@@ -262,7 +274,6 @@ class YouTubeVideoResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('created_at', 'desc')
-            // ========== FILTERS MỚI ==========
             ->filters([
                 Tables\Filters\SelectFilter::make('platform_account_id')
                     ->label('Lọc theo kênh')
@@ -308,18 +319,26 @@ class YouTubeVideoResource extends Resource
                     ->label('Đã đăng lên YouTube')
                     ->query(fn($query) => $query->whereNotNull('video_id')),
             ])
-            // Phần actions và bulkActions giữ nguyên...
             ->actions([
                 Tables\Actions\ActionGroup::make([
-                    Tables\Actions\Action::make('upload_video')
-                        ->label('Đăng Lên YouTube')
-                        ->icon('heroicon-o-cloud-arrow-up')
+                    Tables\Actions\Action::make('upload_now')
+                        ->label('Đăng Ngay')
+                        ->icon('heroicon-o-bolt')
                         ->color('success')
                         ->requiresConfirmation()
-                        ->modalHeading('Đăng Video Lên YouTube')
-                        ->modalDescription('Video sẽ được đăng lên kênh YouTube đã chọn.')
-                        ->modalSubmitActionLabel('Đăng Video')
+                        ->modalHeading('Đăng Video Ngay Lập Tức')
+                        ->modalDescription('Video sẽ được đăng ngay lên YouTube, bỏ qua lịch đã đặt.')
+                        ->modalSubmitActionLabel('Đăng Ngay')
                         ->action(function (YouTubeVideo $record) {
+                            if (!$record->video_file || !Storage::disk('local')->exists($record->video_file)) {
+                                Notification::make()
+                                    ->title('Lỗi!')
+                                    ->body('Không tìm thấy file video.')
+                                    ->danger()
+                                    ->send();
+                                return;
+                            }
+
                             try {
                                 $platformAccount = $record->platformAccount;
                                 if (!$platformAccount) {
@@ -377,18 +396,23 @@ class YouTubeVideoResource extends Resource
                                 );
                                 $media->setFileSize(filesize($videoPath));
 
-                                $status = false;
+                                $uploadStatus = false;
                                 $handle = fopen($videoPath, 'rb');
-                                while (!$status && !feof($handle)) {
+                                while (!$uploadStatus && !feof($handle)) {
                                     $chunk = fread($handle, $chunkSizeBytes);
-                                    $status = $media->nextChunk($chunk);
+                                    $uploadStatus = $media->nextChunk($chunk);
                                 }
                                 fclose($handle);
 
                                 $client->setDefer(false);
 
-                                // Lưu video_id sau khi đăng thành công
-                                $record->update(['video_id' => $status['id']]);
+                                // Cập nhật thông tin video sau khi upload thành công
+                                $record->update([
+                                    'video_id' => $uploadStatus['id'],
+                                    'upload_status' => 'uploaded',
+                                    'uploaded_at' => now(),
+                                    'upload_error' => null
+                                ]);
 
                                 Notification::make()
                                     ->title('Thành Công!')
@@ -400,6 +424,11 @@ class YouTubeVideoResource extends Resource
                                 // Xóa file sau khi upload
                                 Storage::disk('local')->delete($record->video_file);
                             } catch (\Exception $e) {
+                                $record->update([
+                                    'upload_status' => 'failed',
+                                    'upload_error' => $e->getMessage()
+                                ]);
+
                                 Notification::make()
                                     ->title('Lỗi Khi Đăng Video!')
                                     ->body('Không thể đăng video: ' . $e->getMessage())
@@ -408,7 +437,61 @@ class YouTubeVideoResource extends Resource
                                     ->send();
                             }
                         })
-                        ->disabled(fn(YouTubeVideo $record) => !is_null($record->video_id)),
+                        ->visible(fn(YouTubeVideo $record) => $record->isPending() && $record->video_file),
+
+                    Tables\Actions\Action::make('cancel_schedule')
+                        ->label('Hủy Lịch')
+                        ->icon('heroicon-o-x-mark')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->modalHeading('Hủy Lịch Đăng Video')
+                        ->modalDescription('Video sẽ không được tự động đăng theo lịch đã đặt.')
+                        ->modalSubmitActionLabel('Hủy Lịch')
+                        ->action(function (YouTubeVideo $record) {
+                            $record->update([
+                                'scheduled_at' => null,
+                                'upload_status' => 'pending'
+                            ]);
+
+                            Notification::make()
+                                ->title('Đã Hủy Lịch!')
+                                ->body('Lịch đăng video đã được hủy.')
+                                ->success()
+                                ->send();
+                        })
+                        ->visible(fn(YouTubeVideo $record) => !is_null($record->scheduled_at) && $record->isPending()),
+
+                    Tables\Actions\Action::make('retry_upload')
+                        ->label('Thử Lại')
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('info')
+                        ->requiresConfirmation()
+                        ->modalHeading('Thử Lại Upload Video')
+                        ->modalDescription('Video sẽ được thử upload lại lên YouTube.')
+                        ->modalSubmitActionLabel('Thử Lại')
+                        ->action(function (YouTubeVideo $record) {
+                            if (!$record->video_file || !Storage::disk('local')->exists($record->video_file)) {
+                                Notification::make()
+                                    ->title('Lỗi!')
+                                    ->body('Không tìm thấy file video.')
+                                    ->danger()
+                                    ->send();
+                                return;
+                            }
+
+                            // Reset trạng thái và thử lại
+                            $record->update([
+                                'upload_status' => 'pending',
+                                'upload_error' => null
+                            ]);
+
+                            Notification::make()
+                                ->title('Đã Reset!')
+                                ->body('Trạng thái đã được reset về pending. Bạn có thể thử đăng lại.')
+                                ->success()
+                                ->send();
+                        })
+                        ->visible(fn(YouTubeVideo $record) => ($record->upload_status ?? 'pending') === 'failed'),
 
                     Tables\Actions\ViewAction::make()
                         ->label('Xem Chi Tiết')
@@ -524,6 +607,26 @@ class YouTubeVideoResource extends Resource
                                     ->badge()
                                     ->color('secondary'),
 
+                                Infolists\Components\TextEntry::make('scheduled_at')
+                                    ->label('Lịch Đăng')
+                                    ->dateTime('d/m/Y H:i:s')
+                                    ->badge()
+                                    ->color(function ($record) {
+                                        if (!$record->scheduled_at) return 'gray';
+                                        if ($record->scheduled_at > now()) return 'warning';
+                                        if ($record->isUploaded()) return 'success';
+                                        return 'info';
+                                    })
+                                    ->formatStateUsing(function ($state, $record) {
+                                        if (!$state) return 'Đăng ngay';
+                                        return $state->format('d/m/Y H:i:s');
+                                    }),
+
+                                Infolists\Components\TextEntry::make('upload_status_text')
+                                    ->label('Trạng Thái Upload')
+                                    ->badge()
+                                    ->color(fn($record) => $record->upload_status_color),
+
                                 Infolists\Components\TextEntry::make('status')
                                     ->label('Trạng Thái')
                                     ->badge()
@@ -584,6 +687,13 @@ class YouTubeVideoResource extends Resource
                         Infolists\Components\TextEntry::make('description')
                             ->label('Mô Tả Video')
                             ->markdown()
+                            ->columnSpanFull(),
+
+                        Infolists\Components\TextEntry::make('upload_error')
+                            ->label('Lỗi Upload')
+                            ->color('danger')
+                            ->badge()
+                            ->visible(fn($record) => !empty($record->upload_error))
                             ->columnSpanFull(),
                     ]),
 
