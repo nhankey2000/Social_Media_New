@@ -103,7 +103,32 @@ class YouTubeVideoResource extends Resource
                                 'class' => 'bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-xl focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100'
                             ])
                             ->helperText('Chọn danh mục phù hợp cho video'),
+                        Forms\Components\FileUpload::make('video_file')
+                            ->label('File Video')
+                            ->required()
+                            ->acceptedFileTypes(['video/mp4', 'video/mpeg', 'video/webm'])
+                            ->maxSize(1024000) // 1GB
+                            ->disk('local')
+                            ->directory('youtube-videos')
+                            ->extraAttributes([
+                                'class' => 'bg-gradient-to-r from-teal-50 to-cyan-50 border-2 border-teal-300 rounded-xl focus:border-teal-500 focus:ring-4 focus:ring-teal-100'
+                            ])
+                            ->helperText('File video MP4, MPEG hoặc WebM, tối đa 1GB')
+                            ->columnSpanFull(),
 
+// ========== THÊM FIELD LỊCH ĐĂNG MỚI ==========
+                        Forms\Components\DateTimePicker::make('scheduled_at')
+                            ->label('Lịch Đăng Video')
+                            ->placeholder('Chọn thời gian đăng video...')
+                            ->seconds(false)
+                            ->minDate(now())
+                            ->displayFormat('d/m/Y H:i')
+                            ->timezone('Asia/Ho_Chi_Minh')
+                            ->extraAttributes([
+                                'class' => 'bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-300 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100'
+                            ])
+                            ->helperText('Để trống nếu muốn đăng ngay lập tức. Video sẽ tự động được đăng vào thời gian đã chọn.')
+                            ->columnSpanFull(),
                         Forms\Components\Select::make('status')
                             ->label('Trạng Thái Video')
                             ->options([
@@ -159,6 +184,46 @@ class YouTubeVideoResource extends Resource
                     ->badge()
                     ->color('secondary'),
 
+                // ========== THÊM CỘT LỊCH ĐĂNG ==========
+                Tables\Columns\TextColumn::make('scheduled_at')
+                    ->label('Lịch Đăng')
+                    ->dateTime('d/m/Y H:i')
+                    ->sortable()
+                    ->badge()
+                    ->color(function ($record) {
+                        if (!$record->scheduled_at) return 'gray';
+                        if ($record->scheduled_at > now()) return 'warning';
+                        if ($record->isUploaded()) return 'success';
+                        return 'info';
+                    })
+                    ->formatStateUsing(function ($state, $record) {
+                        if (!$state) return 'Đăng ngay';
+                        if ($record->isUploaded()) return $state->format('d/m/Y H:i') . ' ✓';
+                        if ($state > now()) return $state->format('d/m/Y H:i') . ' ⏰';
+                        return $state->format('d/m/Y H:i') . ' ⏳';
+                    })
+                    ->tooltip(function ($record) {
+                        if (!$record->scheduled_at) return 'Video sẽ được đăng ngay lập tức';
+                        if ($record->isUploaded()) return 'Đã đăng thành công';
+                        if ($record->scheduled_at > now()) return 'Đang chờ đến giờ đăng';
+                        return 'Sẵn sàng để đăng';
+                    }),
+
+                // ========== THÊM CỘT TRẠNG THÁI UPLOAD ==========
+                Tables\Columns\TextColumn::make('upload_status_text')
+                    ->label('Trạng Thái Upload')
+                    ->badge()
+                    ->color(fn($record) => $record->upload_status_color)
+                    ->icon(function ($record) {
+                        return match($record->upload_status) {
+                            'pending' => 'heroicon-o-clock',
+                            'uploading' => 'heroicon-o-arrow-up',
+                            'uploaded' => 'heroicon-o-check-circle',
+                            'failed' => 'heroicon-o-x-circle',
+                            default => 'heroicon-o-question-mark-circle',
+                        };
+                    }),
+
                 Tables\Columns\TextColumn::make('video_file')
                     ->label('File Video')
                     ->formatStateUsing(function ($state) {
@@ -182,7 +247,9 @@ class YouTubeVideoResource extends Resource
                     ->badge()
                     ->color('info')
                     ->url(fn($record) => $record->video_id ? "https://www.youtube.com/watch?v={$record->video_id}" : null)
-                    ->openUrlInNewTab(),
+                    ->openUrlInNewTab()
+                    ->placeholder('Chưa đăng')
+                    ->limit(15),
 
                 Tables\Columns\TextColumn::make('status')
                     ->label('Trạng Thái')
@@ -201,13 +268,15 @@ class YouTubeVideoResource extends Resource
                     }),
 
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Ngày Đăng')
+                    ->label('Ngày Tạo')
                     ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->badge()
-                    ->color('gray'),
+                    ->color('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('created_at', 'desc')
+            // ========== FILTERS MỚI ==========
             ->filters([
                 Tables\Filters\SelectFilter::make('platform_account_id')
                     ->label('Lọc theo kênh')
@@ -224,18 +293,36 @@ class YouTubeVideoResource extends Resource
                     ])
                     ->multiple(),
 
-                Tables\Filters\Filter::make('created_today')
-                    ->label('Đăng hôm nay')
-                    ->query(fn($query) => $query->whereDate('created_at', today())),
+                Tables\Filters\SelectFilter::make('upload_status')
+                    ->label('Lọc theo trạng thái upload')
+                    ->options([
+                        'pending' => 'Chờ đăng',
+                        'uploading' => 'Đang đăng',
+                        'uploaded' => 'Đã đăng',
+                        'failed' => 'Lỗi',
+                    ])
+                    ->multiple(),
+
+                Tables\Filters\Filter::make('scheduled_today')
+                    ->label('Lên lịch hôm nay')
+                    ->query(fn($query) => $query->whereDate('scheduled_at', today())),
+
+                Tables\Filters\Filter::make('ready_to_upload')
+                    ->label('Sẵn sàng đăng')
+                    ->query(fn($query) => $query->where('upload_status', 'pending')
+                        ->whereNotNull('scheduled_at')
+                        ->where('scheduled_at', '<=', now())
+                        ->whereNull('video_id')),
 
                 Tables\Filters\Filter::make('has_video_file')
                     ->label('Có file video')
                     ->query(fn($query) => $query->whereNotNull('video_file')),
 
-                Tables\Filters\Filter::make('no_video_file')
-                    ->label('Không có file video')
-                    ->query(fn($query) => $query->whereNull('video_file')),
+                Tables\Filters\Filter::make('uploaded')
+                    ->label('Đã đăng lên YouTube')
+                    ->query(fn($query) => $query->whereNotNull('video_id')),
             ])
+            // Phần actions và bulkActions giữ nguyên...
             ->actions([
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\Action::make('upload_video')
