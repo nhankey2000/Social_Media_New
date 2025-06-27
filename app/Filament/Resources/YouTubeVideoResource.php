@@ -11,6 +11,8 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Notifications\Notification;
+use Filament\Infolists;
+use Filament\Infolists\Infolist;
 use Google_Client;
 use Google_Service_YouTube;
 use Illuminate\Support\Facades\DB;
@@ -157,6 +159,20 @@ class YouTubeVideoResource extends Resource
                     ->badge()
                     ->color('secondary'),
 
+                Tables\Columns\TextColumn::make('video_file')
+                    ->label('File Video')
+                    ->formatStateUsing(function ($state) {
+                        if (!$state) {
+                            return 'Không có file';
+                        }
+                        $fileName = basename($state);
+                        return strlen($fileName) > 20 ? substr($fileName, 0, 17) . '...' : $fileName;
+                    })
+                    ->badge()
+                    ->color(fn($state) => $state ? 'success' : 'gray')
+                    ->icon(fn($state) => $state ? 'heroicon-o-document-text' : 'heroicon-o-x-circle')
+                    ->tooltip(fn($state) => $state ? basename($state) : 'Không có file video'),
+
                 Tables\Columns\TextColumn::make('video_id')
                     ->label('Video ID')
                     ->searchable()
@@ -211,6 +227,14 @@ class YouTubeVideoResource extends Resource
                 Tables\Filters\Filter::make('created_today')
                     ->label('Đăng hôm nay')
                     ->query(fn($query) => $query->whereDate('created_at', today())),
+
+                Tables\Filters\Filter::make('has_video_file')
+                    ->label('Có file video')
+                    ->query(fn($query) => $query->whereNotNull('video_file')),
+
+                Tables\Filters\Filter::make('no_video_file')
+                    ->label('Không có file video')
+                    ->query(fn($query) => $query->whereNull('video_file')),
             ])
             ->actions([
                 Tables\Actions\ActionGroup::make([
@@ -318,7 +342,7 @@ class YouTubeVideoResource extends Resource
                         ->icon('heroicon-o-eye')
                         ->color('info')
                         ->slideOver()
-                        ->modalWidth('4xl'),
+                        ->modalWidth('6xl'),
 
                     Tables\Actions\EditAction::make()
                         ->label('Chỉnh Sửa')
@@ -403,6 +427,134 @@ class YouTubeVideoResource extends Resource
             ->striped()
             ->recordUrl(null)
             ->poll('300s');
+    }
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Infolists\Components\Section::make('Thông Tin Video')
+                    ->icon('heroicon-o-video-camera')
+                    ->schema([
+                        Infolists\Components\Grid::make(2)
+                            ->schema([
+                                Infolists\Components\TextEntry::make('platformAccount.name')
+                                    ->label('Kênh YouTube')
+                                    ->badge()
+                                    ->color('primary')
+                                    ->icon('heroicon-o-video-camera'),
+
+                                Infolists\Components\TextEntry::make('title')
+                                    ->label('Tiêu Đề Video')
+                                    ->copyable()
+                                    ->copyMessage('Đã sao chép tiêu đề!')
+                                    ->badge()
+                                    ->color('secondary'),
+
+                                Infolists\Components\TextEntry::make('status')
+                                    ->label('Trạng Thái')
+                                    ->badge()
+                                    ->color(fn($state) => match ($state) {
+                                        'public' => 'success',
+                                        'private' => 'warning',
+                                        'unlisted' => 'gray',
+                                        default => 'gray',
+                                    })
+                                    ->formatStateUsing(fn($state) => match ($state) {
+                                        'public' => 'Công khai',
+                                        'private' => 'Riêng tư',
+                                        'unlisted' => 'Không công khai',
+                                        default => $state,
+                                    }),
+
+                                Infolists\Components\TextEntry::make('category_id')
+                                    ->label('Danh Mục')
+                                    ->formatStateUsing(fn($state) => match ($state) {
+                                        '1' => 'Film & Animation',
+                                        '2' => 'Autos & Vehicles',
+                                        '10' => 'Music',
+                                        '15' => 'Pets & Animals',
+                                        '17' => 'Sports',
+                                        '19' => 'Travel & Events',
+                                        '20' => 'Gaming',
+                                        '22' => 'People & Blogs',
+                                        '23' => 'Comedy',
+                                        '24' => 'Entertainment',
+                                        '25' => 'News & Politics',
+                                        '26' => 'Howto & Style',
+                                        '27' => 'Education',
+                                        '28' => 'Science & Technology',
+                                        '29' => 'Nonprofits & Activism',
+                                        default => $state,
+                                    })
+                                    ->badge()
+                                    ->color('info'),
+
+                                Infolists\Components\TextEntry::make('video_id')
+                                    ->label('Video ID')
+                                    ->copyable()
+                                    ->copyMessage('Đã sao chép Video ID!')
+                                    ->fontFamily('mono')
+                                    ->badge()
+                                    ->color('info')
+                                    ->url(fn($record) => $record->video_id ? "https://www.youtube.com/watch?v={$record->video_id}" : null)
+                                    ->openUrlInNewTab()
+                                    ->placeholder('Chưa đăng lên YouTube'),
+
+                                Infolists\Components\TextEntry::make('created_at')
+                                    ->label('Ngày Tạo')
+                                    ->dateTime('d/m/Y H:i:s')
+                                    ->badge()
+                                    ->color('gray'),
+                            ]),
+
+                        Infolists\Components\TextEntry::make('description')
+                            ->label('Mô Tả Video')
+                            ->markdown()
+                            ->columnSpanFull(),
+                    ]),
+
+                Infolists\Components\Section::make('File Video')
+                    ->icon('heroicon-o-film')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('video_file')
+                            ->label('Tên File')
+                            ->formatStateUsing(fn($state) => $state ? basename($state) : 'Không có file')
+                            ->badge()
+                            ->color(fn($state) => $state ? 'success' : 'gray')
+                            ->icon(fn($state) => $state ? 'heroicon-o-document-text' : 'heroicon-o-x-circle'),
+
+                        Infolists\Components\TextEntry::make('file_size')
+                            ->label('Kích Thước File')
+                            ->formatStateUsing(function ($record) {
+                                if (!$record->video_file || !Storage::disk('local')->exists($record->video_file)) {
+                                    return 'Không có file';
+                                }
+                                $size = Storage::disk('local')->size($record->video_file);
+                                return number_format($size / (1024 * 1024), 2) . ' MB';
+                            })
+                            ->badge()
+                            ->color('info')
+                            ->icon('heroicon-o-server'),
+
+                        Infolists\Components\TextEntry::make('video_url')
+                            ->label('Xem Video')
+                            ->formatStateUsing(fn($record) => $record->video_file ? 'Nhấn để xem video' : 'Không có file video')
+                            ->url(function ($record) {
+                                if (!$record->video_file || !Storage::disk('local')->exists($record->video_file)) {
+                                    return null;
+                                }
+                                // Tạo URL để download hoặc xem file
+                                return route('filament.admin.resources.you-tube-videos.video', $record);
+                            })
+                            ->openUrlInNewTab()
+                            ->badge()
+                            ->color('success')
+                            ->icon('heroicon-o-play')
+                            ->visible(fn($record) => !is_null($record->video_file) && Storage::disk('local')->exists($record->video_file)),
+                    ])
+                    ->collapsible(),
+            ]);
     }
 
     public static function getPages(): array
