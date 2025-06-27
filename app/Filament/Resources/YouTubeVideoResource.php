@@ -142,20 +142,6 @@ class YouTubeVideoResource extends Resource
                                 'class' => 'bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-300 rounded-xl focus:border-red-500 focus:ring-4 focus:ring-red-100'
                             ])
                             ->helperText('Chọn trạng thái hiển thị của video'),
-
-                        Forms\Components\FileUpload::make('video_file')
-                            ->label('File Video')
-                            ->required()
-                            ->acceptedFileTypes(['video/mp4', 'video/mpeg', 'video/webm'])
-                            ->maxSize(1024000) // 1GB
-                            ->disk('local')
-                            ->directory('youtube-videos')
-                            ->extraAttributes([
-                                'class' => 'bg-gradient-to-r from-teal-50 to-cyan-50 border-2 border-teal-300 rounded-xl focus:border-teal-500 focus:ring-4 focus:ring-teal-100'
-                            ])
-                            ->helperText('File video MP4, MPEG hoặc WebM, tối đa 1GB')
-                            ->columnSpanFull(),
-                    ])
                     ->collapsible()
                     ->collapsed(false)
                     ->extraAttributes([
