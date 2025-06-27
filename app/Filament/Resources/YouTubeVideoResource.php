@@ -390,29 +390,71 @@ class YouTubeVideoResource extends Resource
 
                                 $video = new \Google_Service_YouTube_Video();
                                 $snippet = new \Google_Service_YouTube_VideoSnippet();
-                                $snippet->setTitle($record->title);
 
-                                // ========== XỬ LÝ RIÊNG CHO SHORTS ==========
+                                // ========== XỬ LÝ TITLE CHO SHORTS ==========
                                 if ($record->video_type === 'short') {
-                                    // Thêm #Shorts vào đầu description
-                                    $description = $record->description;
-                                    if (!str_contains(strtolower($description), '#shorts')) {
-                                        $description = "#Shorts\n\n" . $description;
+                                    $title = $record->title;
+                                    if (!str_contains(strtolower($title), '#shorts') && !str_contains(strtolower($title), 'shorts')) {
+                                        $title = $title . ' #Shorts';
                                     }
+                                    $snippet->setTitle($title);
+                                } else {
+                                    $snippet->setTitle($record->title);
+                                }
+
+                                // ========== XỬ LÝ DESCRIPTION CHO SHORTS ==========
+                                if ($record->video_type === 'short') {
+                                    // Description tối ưu cho Shorts
+                                    $description = "#Shorts #YouTubeShorts\n\n" . $record->description;
+
+                                    // Thêm hashtags viral
+                                    $viralTags = ['#Viral', '#Trending', '#MustWatch'];
+                                    $description .= "\n\n" . implode(' ', $viralTags);
+
                                     $snippet->setDescription($description);
 
-                                    // Force category Entertainment cho Shorts
+                                    // Force Entertainment category
                                     $snippet->setCategoryId('24');
 
                                     // Tags tối ưu cho Shorts
-                                    $tags = $record->getAutoTags();
-                                    $snippet->setTags(array_slice($tags, 0, 10));
+                                    $tags = [
+                                        'Shorts', 'YouTubeShorts', 'Short', 'Viral', 'Trending',
+                                        'QuickVideo', 'ShortForm', 'Mobile', 'Entertainment'
+                                    ];
+
+                                    // Thêm tags dựa trên content
+                                    $content = strtolower($record->title . ' ' . $record->description);
+
+                                    if (str_contains($content, 'funny') || str_contains($content, 'hài')) {
+                                        $tags = array_merge($tags, ['Comedy', 'Funny', 'Laugh']);
+                                    }
+
+                                    if (str_contains($content, 'music') || str_contains($content, 'nhạc')) {
+                                        $tags = array_merge($tags, ['Music', 'Song', 'Audio']);
+                                    }
+
+                                    if (str_contains($content, 'dance') || str_contains($content, 'nhảy')) {
+                                        $tags = array_merge($tags, ['Dance', 'Dancing', 'Move']);
+                                    }
+
+                                    // Extract hashtags từ description
+                                    preg_match_all('/#(\w+)/', $record->description, $matches);
+                                    if (!empty($matches[1])) {
+                                        foreach ($matches[1] as $tag) {
+                                            if (!in_array(strtolower($tag), array_map('strtolower', $tags)) && count($tags) < 15) {
+                                                $tags[] = ucfirst(strtolower($tag));
+                                            }
+                                        }
+                                    }
+
+                                    $tags = array_unique(array_slice($tags, 0, 15));
+                                    $snippet->setTags($tags);
+
                                 } else {
                                     // Video dài thông thường
                                     $snippet->setDescription($record->description);
                                     $snippet->setCategoryId($record->category_id);
 
-                                    // Tags thông thường
                                     preg_match_all('/#(\w+)/', $record->description, $matches);
                                     if (!empty($matches[1])) {
                                         $tags = array_slice($matches[1], 0, 10);
