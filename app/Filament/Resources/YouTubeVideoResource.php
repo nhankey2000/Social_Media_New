@@ -63,7 +63,25 @@ class YouTubeVideoResource extends Resource
                                     ->extraAttributes([
                                         'class' => 'bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100'
                                     ])
-                                    ->helperText('Tiêu đề tối đa 100 ký tự'),
+                                    ->helperText(function ($get) {
+                                        $videoType = $get('video_type');
+                                        if ($videoType === 'short') {
+                                            return 'Tiêu đề tối đa 100 ký tự. Sẽ tự động thêm #Shorts nếu chưa có.';
+                                        }
+                                        return 'Tiêu đề tối đa 100 ký tự';
+                                    })
+                                    ->live()
+                                    ->afterStateUpdated(function ($state, $set, $get) {
+                                        if ($get('video_type') === 'short' && $state) {
+                                            // Auto add #Shorts if not present
+                                            if (!str_contains(strtolower($state), '#shorts') && !str_contains(strtolower($state), 'shorts')) {
+                                                $newTitle = '#Shorts ' . $state;
+                                                if (strlen($newTitle) <= 100) {
+                                                    $set('title', $newTitle);
+                                                }
+                                            }
+                                        }
+                                    }),
                             ]),
 
                         Forms\Components\Textarea::make('description')
@@ -155,10 +173,44 @@ class YouTubeVideoResource extends Resource
                             ->helperText(function ($get) {
                                 $videoType = $get('video_type');
                                 if ($videoType === 'short') {
-                                    return '📱 YouTube Shorts: Video dọc (9:16), tối đa 60 giây, định dạng MP4 khuyến nghị';
+                                    return '📱 YouTube Shorts: Video dọc (9:16), tối đa 60 giây, định dạng MP4 khuyến nghị. Độ phân giải: 1080x1920 hoặc 720x1280';
                                 }
                                 return '🎬 Video dài: MP4, MPEG hoặc WebM, tối đa 1GB';
                             })
+                            ->rules([
+                                function ($get) {
+                                    return function (string $attribute, $value, \Closure $fail) use ($get) {
+                                        if ($get('video_type') === 'short' && $value) {
+                                            try {
+                                                $path = Storage::disk('local')->path($value);
+                                                if (file_exists($path)) {
+                                                    // Validate using FFProbe
+                                                    $ffprobe = \FFMpeg\FFProbe::create();
+                                                    $duration = $ffprobe->format($path)->get('duration');
+
+                                                    if ($duration > 60) {
+                                                        $fail('Video Shorts phải ≤ 60 giây. Video này dài ' . round($duration) . ' giây.');
+                                                    }
+
+                                                    $video = $ffprobe->streams($path)->videos()->first();
+                                                    if ($video) {
+                                                        $width = $video->get('width');
+                                                        $height = $video->get('height');
+                                                        $aspectRatio = $width / $height;
+
+                                                        // Check tỷ lệ dọc (9:16 = 0.5625)
+                                                        if ($aspectRatio > 0.75) { // Không quá gần vuông
+                                                            $fail("Video Shorts phải ở tỷ lệ dọc (9:16). Video này: {$width}x{$height}");
+                                                        }
+                                                    }
+                                                }
+                                            } catch (\Exception $e) {
+                                                \Log::warning('Cannot validate video: ' . $e->getMessage());
+                                            }
+                                        }
+                                    };
+                                }
+                            ])
                             ->columnSpanFull(),
 
                         Forms\Components\DateTimePicker::make('scheduled_at')
@@ -254,6 +306,8 @@ class YouTubeVideoResource extends Resource
                             'uploading' => 'heroicon-o-arrow-up',
                             'uploaded' => 'heroicon-o-check-circle',
                             'failed' => 'heroicon-o-x-circle',
+                            'deleted_from_youtube' => 'heroicon-o-trash',
+                            'not_found_on_youtube' => 'heroicon-o-question-mark-circle',
                             default => 'heroicon-o-question-mark-circle',
                         };
                     }),
@@ -312,6 +366,8 @@ class YouTubeVideoResource extends Resource
                         'uploading' => 'Đang đăng',
                         'uploaded' => 'Đã đăng',
                         'failed' => 'Lỗi',
+                        'deleted_from_youtube' => 'Đã xóa khỏi YouTube',
+                        'not_found_on_youtube' => 'Không tìm thấy trên YouTube',
                     ])
                     ->multiple(),
 
@@ -359,6 +415,10 @@ class YouTubeVideoResource extends Resource
                             }
 
                             try {
+                                // Tăng timeout cho upload
+                                set_time_limit(300); // 5 phút
+                                ini_set('memory_limit', '512M');
+
                                 $platformAccount = $record->platformAccount;
                                 if (!$platformAccount) {
                                     throw new \Exception('Không tìm thấy kênh YouTube.');
@@ -366,6 +426,10 @@ class YouTubeVideoResource extends Resource
 
                                 $client = new Google_Client();
                                 $client->setAccessToken(json_decode($platformAccount->access_token, true));
+
+                                // Tăng timeout cho Google Client
+                                $client->getHttpClient()->setDefaultOption('timeout', 300);
+                                $client->getHttpClient()->setDefaultOption('connect_timeout', 60);
 
                                 // Kiểm tra và refresh token nếu hết hạn
                                 if ($client->isAccessTokenExpired()) {
@@ -387,74 +451,114 @@ class YouTubeVideoResource extends Resource
                                 }
 
                                 $youtube = new Google_Service_YouTube($client);
-
                                 $video = new \Google_Service_YouTube_Video();
                                 $snippet = new \Google_Service_YouTube_VideoSnippet();
 
-                                // ========== XỬ LÝ TITLE CHO SHORTS ==========
+                                // ========== CHUẨN HÓA SHORTS METADATA ==========
                                 if ($record->video_type === 'short') {
+                                    // 1. TITLE - Bắt buộc có #Shorts
                                     $title = $record->title;
-                                    if (!str_contains(strtolower($title), '#shorts') && !str_contains(strtolower($title), 'shorts')) {
-                                        $title = $title . ' #Shorts';
+                                    if (!str_contains(strtolower($title), '#shorts')) {
+                                        $title = '#Shorts ' . $title;
+                                    }
+                                    // Đảm bảo title <= 100 ký tự
+                                    if (strlen($title) > 100) {
+                                        $title = substr($title, 0, 97) . '...';
                                     }
                                     $snippet->setTitle($title);
-                                } else {
-                                    $snippet->setTitle($record->title);
-                                }
 
-                                // ========== XỬ LÝ DESCRIPTION CHO SHORTS ==========
-                                if ($record->video_type === 'short') {
-                                    // Description tối ưu cho Shorts
-                                    $description = "#Shorts #YouTubeShorts\n\n" . $record->description;
+                                    // 2. DESCRIPTION - Tối ưu hoàn toàn cho Shorts
+                                    $description = "#Shorts #YouTubeShorts #Short\n\n";
+                                    $description .= $record->description . "\n\n";
 
-                                    // Thêm hashtags viral
-                                    $viralTags = ['#Viral', '#Trending', '#MustWatch'];
-                                    $description .= "\n\n" . implode(' ', $viralTags);
+                                    // Thêm hashtags viral đặc biệt cho Shorts
+                                    $shortsHashtags = [
+                                        '#Viral', '#Trending', '#ForYou', '#FYP',
+                                        '#ShortVideo', '#QuickWatch', '#MustSee',
+                                        '#Entertainment', '#Fun', '#Watch'
+                                    ];
+                                    $description .= implode(' ', $shortsHashtags);
+
+                                    // Thêm call-to-action đặc biệt cho Shorts
+                                    $description .= "\n\n🔔 Subscribe for more Shorts!\n👍 Like if you enjoyed!\n💬 Comment your thoughts!";
 
                                     $snippet->setDescription($description);
 
-                                    // Force Entertainment category
+                                    // 3. CATEGORY - Bắt buộc Entertainment cho Shorts
                                     $snippet->setCategoryId('24');
 
-                                    // Tags tối ưu cho Shorts
-                                    $tags = [
-                                        'Shorts', 'YouTubeShorts', 'Short', 'Viral', 'Trending',
-                                        'QuickVideo', 'ShortForm', 'Mobile', 'Entertainment'
+                                    // 4. TAGS - Tối ưu đặc biệt cho Shorts algorithm
+                                    $optimizedTags = [
+                                        'Shorts', 'YouTubeShorts', 'Short', 'ShortVideo',
+                                        'Viral', 'Trending', 'QuickVideo', 'MobileVideo',
+                                        'Entertainment', 'Fun', 'Watch', 'ForYou'
                                     ];
 
-                                    // Thêm tags dựa trên content
+                                    // Phân tích content để thêm tags contextual
                                     $content = strtolower($record->title . ' ' . $record->description);
 
-                                    if (str_contains($content, 'funny') || str_contains($content, 'hài')) {
-                                        $tags = array_merge($tags, ['Comedy', 'Funny', 'Laugh']);
+                                    // Tags cho comedy/funny content
+                                    if (preg_match('/\b(funny|hài|comedy|laugh|joke|humor)\b/i', $content)) {
+                                        $optimizedTags = array_merge($optimizedTags, [
+                                            'Comedy', 'Funny', 'Hilarious', 'Laugh', 'Humor', 'Joke'
+                                        ]);
                                     }
 
-                                    if (str_contains($content, 'music') || str_contains($content, 'nhạc')) {
-                                        $tags = array_merge($tags, ['Music', 'Song', 'Audio']);
+                                    // Tags cho music content
+                                    if (preg_match('/\b(music|nhạc|song|beat|dance|sing)\b/i', $content)) {
+                                        $optimizedTags = array_merge($optimizedTags, [
+                                            'Music', 'Song', 'Beat', 'Audio', 'Sound', 'Melody'
+                                        ]);
                                     }
 
-                                    if (str_contains($content, 'dance') || str_contains($content, 'nhảy')) {
-                                        $tags = array_merge($tags, ['Dance', 'Dancing', 'Move']);
+                                    // Tags cho dance content
+                                    if (preg_match('/\b(dance|nhảy|dancing|move|choreography)\b/i', $content)) {
+                                        $optimizedTags = array_merge($optimizedTags, [
+                                            'Dance', 'Dancing', 'Moves', 'Choreography', 'Performance'
+                                        ]);
                                     }
 
-                                    // Extract hashtags từ description
+                                    // Tags cho food content
+                                    if (preg_match('/\b(food|ăn|cook|recipe|delicious|tasty)\b/i', $content)) {
+                                        $optimizedTags = array_merge($optimizedTags, [
+                                            'Food', 'Cooking', 'Recipe', 'Delicious', 'Yummy', 'Foodie'
+                                        ]);
+                                    }
+
+                                    // Tags cho travel/places
+                                    if (preg_match('/\b(travel|du lịch|place|location|beautiful|scenery)\b/i', $content)) {
+                                        $optimizedTags = array_merge($optimizedTags, [
+                                            'Travel', 'Beautiful', 'Amazing', 'Place', 'Location', 'Scenery'
+                                        ]);
+                                    }
+
+                                    // Thêm tags từ hashtags trong description
                                     preg_match_all('/#(\w+)/', $record->description, $matches);
                                     if (!empty($matches[1])) {
-                                        foreach ($matches[1] as $tag) {
-                                            if (!in_array(strtolower($tag), array_map('strtolower', $tags)) && count($tags) < 15) {
-                                                $tags[] = ucfirst(strtolower($tag));
+                                        foreach ($matches[1] as $hashtag) {
+                                            $tag = ucfirst(strtolower($hashtag));
+                                            if (!in_array($tag, $optimizedTags) && strlen($tag) >= 3) {
+                                                $optimizedTags[] = $tag;
                                             }
                                         }
                                     }
 
-                                    $tags = array_unique(array_slice($tags, 0, 15));
-                                    $snippet->setTags($tags);
+                                    // Loại bỏ duplicates và giới hạn 15 tags (tối ưu cho Shorts)
+                                    $optimizedTags = array_unique($optimizedTags);
+                                    $optimizedTags = array_slice($optimizedTags, 0, 15);
+
+                                    $snippet->setTags($optimizedTags);
+
+                                    // 5. THÊM DEFAULT LANGUAGE để YouTube hiểu content
+                                    $snippet->setDefaultLanguage('vi'); // Hoặc 'en' nếu content tiếng Anh
 
                                 } else {
-                                    // Video dài thông thường
+                                    // Video dài thông thường - giữ nguyên logic cũ
+                                    $snippet->setTitle($record->title);
                                     $snippet->setDescription($record->description);
                                     $snippet->setCategoryId($record->category_id);
 
+                                    // Extract hashtags cho video dài
                                     preg_match_all('/#(\w+)/', $record->description, $matches);
                                     if (!empty($matches[1])) {
                                         $tags = array_slice($matches[1], 0, 10);
@@ -469,7 +573,21 @@ class YouTubeVideoResource extends Resource
                                 $video->setStatus($status);
 
                                 $videoPath = Storage::disk('local')->path($record->video_file);
-                                $chunkSizeBytes = 1 * 1024 * 1024; // 1MB
+
+                                // Kiểm tra file tồn tại và có thể đọc
+                                if (!file_exists($videoPath) || !is_readable($videoPath)) {
+                                    throw new \Exception('File video không tồn tại hoặc không thể đọc.');
+                                }
+
+                                // Giảm chunk size cho kết nối chậm
+                                $fileSize = filesize($videoPath);
+                                $chunkSizeBytes = $fileSize > 50 * 1024 * 1024 ? 2 * 1024 * 1024 : 1 * 1024 * 1024; // 2MB cho file lớn, 1MB cho file nhỏ
+
+                                // Cập nhật trạng thái uploading
+                                $record->update([
+                                    'upload_status' => 'uploading',
+                                    'upload_error' => null
+                                ]);
 
                                 $client->setDefer(true);
                                 $insertRequest = $youtube->videos->insert('snippet,status', $video);
@@ -482,17 +600,46 @@ class YouTubeVideoResource extends Resource
                                     true,
                                     $chunkSizeBytes
                                 );
-                                $media->setFileSize(filesize($videoPath));
+                                $media->setFileSize($fileSize);
 
                                 $uploadStatus = false;
                                 $handle = fopen($videoPath, 'rb');
+                                $uploadProgress = 0;
+                                $maxRetries = 3;
+                                $retryCount = 0;
+
                                 while (!$uploadStatus && !feof($handle)) {
-                                    $chunk = fread($handle, $chunkSizeBytes);
-                                    $uploadStatus = $media->nextChunk($chunk);
+                                    try {
+                                        $chunk = fread($handle, $chunkSizeBytes);
+                                        if ($chunk === false) {
+                                            throw new \Exception('Không thể đọc file video.');
+                                        }
+
+                                        $uploadStatus = $media->nextChunk($chunk);
+                                        $uploadProgress += strlen($chunk);
+
+                                        // Log progress (optional)
+                                        $percentComplete = ($uploadProgress / $fileSize) * 100;
+                                        \Log::info("Upload progress: {$percentComplete}%");
+
+                                    } catch (\Google_Service_Exception $e) {
+                                        $retryCount++;
+                                        if ($retryCount >= $maxRetries) {
+                                            fclose($handle);
+                                            throw new \Exception('Upload failed after ' . $maxRetries . ' retries: ' . $e->getMessage());
+                                        }
+
+                                        \Log::warning("Upload retry {$retryCount}/{$maxRetries}: " . $e->getMessage());
+                                        sleep(2); // Wait 2 seconds before retry
+                                        continue;
+                                    }
                                 }
                                 fclose($handle);
-
                                 $client->setDefer(false);
+
+                                if (!$uploadStatus) {
+                                    throw new \Exception('Upload không hoàn thành.');
+                                }
 
                                 // Cập nhật thông tin video sau khi upload thành công
                                 $record->update([
@@ -512,11 +659,14 @@ class YouTubeVideoResource extends Resource
 
                                 // Xóa file sau khi upload
                                 Storage::disk('local')->delete($record->video_file);
+
                             } catch (\Exception $e) {
                                 $record->update([
                                     'upload_status' => 'failed',
                                     'upload_error' => $e->getMessage()
                                 ]);
+
+                                \Log::error('YouTube upload failed: ' . $e->getMessage());
 
                                 Notification::make()
                                     ->title('Lỗi Khi Đăng Video!')
@@ -582,6 +732,89 @@ class YouTubeVideoResource extends Resource
                         })
                         ->visible(fn(YouTubeVideo $record) => ($record->upload_status ?? 'pending') === 'failed'),
 
+                    // ========== THÊM ACTION XÓA TRÊN YOUTUBE ==========
+                    Tables\Actions\Action::make('delete_youtube_only')
+                        ->label('Chỉ Xóa Trên YouTube')
+                        ->icon('heroicon-o-trash')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->modalHeading('Xóa Video Trên YouTube')
+                        ->modalDescription('Video sẽ bị xóa vĩnh viễn trên YouTube nhưng bản ghi vẫn được giữ trong hệ thống.')
+                        ->modalSubmitActionLabel('Xóa Trên YouTube')
+                        ->visible(fn(YouTubeVideo $record) => !is_null($record->video_id))
+                        ->action(function (YouTubeVideo $record) {
+                            try {
+                                $platformAccount = $record->platformAccount;
+                                if (!$platformAccount) {
+                                    throw new \Exception('Không tìm thấy kênh YouTube.');
+                                }
+
+                                $client = new Google_Client();
+                                $client->setAccessToken(json_decode($platformAccount->access_token, true));
+
+                                // Refresh token if expired
+                                if ($client->isAccessTokenExpired()) {
+                                    $facebookAccount = DB::table('facebook_accounts')
+                                        ->where('platform_id', 3)
+                                        ->first();
+
+                                    if (!$facebookAccount) {
+                                        throw new \Exception('Không tìm thấy thông tin ứng dụng YouTube.');
+                                    }
+
+                                    $client->setClientId($facebookAccount->app_id);
+                                    $client->setClientSecret($facebookAccount->app_secret);
+                                    $client->setRedirectUri($facebookAccount->redirect_url);
+                                    $client->refreshToken($client->getRefreshToken());
+
+                                    $newToken = $client->getAccessToken();
+                                    $platformAccount->update(['access_token' => json_encode($newToken)]);
+                                }
+
+                                $youtube = new Google_Service_YouTube($client);
+                                $youtube->videos->delete($record->video_id);
+
+                                // Cập nhật bản ghi để đánh dấu đã xóa trên YouTube
+                                $record->update([
+                                    'video_id' => null,
+                                    'upload_status' => 'deleted_from_youtube',
+                                    'upload_error' => 'Video đã bị xóa trên YouTube lúc ' . now()->format('d/m/Y H:i:s')
+                                ]);
+
+                                Notification::make()
+                                    ->title('Thành Công!')
+                                    ->body('Video đã được xóa trên YouTube. Bản ghi vẫn được giữ trong hệ thống.')
+                                    ->success()
+                                    ->duration(8000)
+                                    ->send();
+
+                            } catch (\Google_Service_Exception $e) {
+                                if ($e->getCode() === 404) {
+                                    // Video không tồn tại
+                                    $record->update([
+                                        'video_id' => null,
+                                        'upload_status' => 'not_found_on_youtube',
+                                        'upload_error' => 'Video không tồn tại trên YouTube'
+                                    ]);
+
+                                    Notification::make()
+                                        ->title('Thông Báo')
+                                        ->body('Video không tồn tại trên YouTube (có thể đã bị xóa trước đó).')
+                                        ->warning()
+                                        ->send();
+                                } else {
+                                    throw $e;
+                                }
+                            } catch (\Exception $e) {
+                                Notification::make()
+                                    ->title('Lỗi!')
+                                    ->body('Không thể xóa video trên YouTube: ' . $e->getMessage())
+                                    ->danger()
+                                    ->duration(10000)
+                                    ->send();
+                            }
+                        }),
+
                     Tables\Actions\ViewAction::make()
                         ->label('Xem Chi Tiết')
                         ->icon('heroicon-o-eye')
@@ -594,36 +827,147 @@ class YouTubeVideoResource extends Resource
                         ->icon('heroicon-o-pencil-square')
                         ->color('warning'),
 
+                    // ========== CẬP NHẬT DELETE ACTION ==========
                     Tables\Actions\DeleteAction::make()
                         ->label('Xóa Video')
                         ->icon('heroicon-o-trash')
                         ->color('danger')
                         ->requiresConfirmation()
                         ->modalHeading('Xóa Video')
-                        ->modalDescription('Bạn có chắc chắn muốn xóa video này? Hành động này chỉ xóa bản ghi trong hệ thống, không xóa video trên YouTube.')
+                        ->modalDescription(function ($record) {
+                            if ($record->video_id) {
+                                return 'Bạn có chắc chắn muốn xóa video này? Video sẽ bị xóa vĩnh viễn trên YouTube và không thể khôi phục.';
+                            }
+                            return 'Bạn có chắc chắn muốn xóa video này? Chỉ xóa bản ghi trong hệ thống.';
+                        })
                         ->modalSubmitActionLabel('Xóa Video')
-                        ->action(function (YouTubeVideo $record) {
+                        ->form([
+                            Forms\Components\Checkbox::make('delete_from_youtube')
+                                ->label('Xóa video trên YouTube')
+                                ->helperText('Nếu tích chọn, video sẽ bị xóa vĩnh viễn trên YouTube')
+                                ->default(true)
+                                ->visible(fn($record) => !is_null($record->video_id))
+                                ->dehydrated(),
+
+                            Forms\Components\Checkbox::make('delete_local_file')
+                                ->label('Xóa file video cục bộ')
+                                ->helperText('Xóa file video được lưu trữ trên server')
+                                ->default(true)
+                                ->visible(fn($record) => !is_null($record->video_file))
+                                ->dehydrated(),
+                        ])
+                        ->action(function (YouTubeVideo $record, array $data) {
                             try {
-                                // Xóa file video nếu chưa được đăng lên YouTube
-                                if (!is_null($record->video_file) && Storage::disk('local')->exists($record->video_file)) {
-                                    Storage::disk('local')->delete($record->video_file);
+                                $deleteFromYouTube = $data['delete_from_youtube'] ?? false;
+                                $deleteLocalFile = $data['delete_local_file'] ?? true;
+                                $errors = [];
+
+                                // 1. Xóa video trên YouTube nếu được yêu cầu
+                                if ($deleteFromYouTube && $record->video_id) {
+                                    try {
+                                        $platformAccount = $record->platformAccount;
+                                        if (!$platformAccount) {
+                                            throw new \Exception('Không tìm thấy kênh YouTube.');
+                                        }
+
+                                        $client = new Google_Client();
+                                        $client->setAccessToken(json_decode($platformAccount->access_token, true));
+
+                                        // Kiểm tra và refresh token nếu hết hạn
+                                        if ($client->isAccessTokenExpired()) {
+                                            $facebookAccount = DB::table('facebook_accounts')
+                                                ->where('platform_id', 3)
+                                                ->first();
+
+                                            if (!$facebookAccount) {
+                                                throw new \Exception('Không tìm thấy thông tin ứng dụng YouTube.');
+                                            }
+
+                                            $client->setClientId($facebookAccount->app_id);
+                                            $client->setClientSecret($facebookAccount->app_secret);
+                                            $client->setRedirectUri($facebookAccount->redirect_url);
+                                            $client->refreshToken($client->getRefreshToken());
+
+                                            $newToken = $client->getAccessToken();
+                                            $platformAccount->update(['access_token' => json_encode($newToken)]);
+                                        }
+
+                                        $youtube = new Google_Service_YouTube($client);
+
+                                        // Xóa video trên YouTube
+                                        $youtube->videos->delete($record->video_id);
+
+                                        \Log::info("Video deleted from YouTube: {$record->video_id}");
+
+                                    } catch (\Google_Service_Exception $e) {
+                                        $errorCode = $e->getCode();
+                                        $errorMessage = $e->getMessage();
+
+                                        if ($errorCode === 404) {
+                                            // Video không tồn tại trên YouTube (có thể đã bị xóa)
+                                            \Log::warning("Video not found on YouTube: {$record->video_id}");
+                                        } else {
+                                            $errors[] = "Lỗi khi xóa video trên YouTube: {$errorMessage}";
+                                            \Log::error("YouTube deletion error: {$errorMessage}");
+                                        }
+                                    } catch (\Exception $e) {
+                                        $errors[] = "Không thể xóa video trên YouTube: " . $e->getMessage();
+                                        \Log::error("YouTube deletion error: " . $e->getMessage());
+                                    }
                                 }
 
+                                // 2. Xóa file video cục bộ
+                                if ($deleteLocalFile && $record->video_file) {
+                                    try {
+                                        if (Storage::disk('local')->exists($record->video_file)) {
+                                            Storage::disk('local')->delete($record->video_file);
+                                            \Log::info("Local video file deleted: {$record->video_file}");
+                                        }
+                                    } catch (\Exception $e) {
+                                        $errors[] = "Không thể xóa file video: " . $e->getMessage();
+                                        \Log::error("Local file deletion error: " . $e->getMessage());
+                                    }
+                                }
+
+                                // 3. Xóa bản ghi trong database
+                                $videoTitle = $record->title;
+                                $videoType = $record->video_type === 'short' ? 'YouTube Shorts' : 'Video dài';
                                 $record->delete();
 
-                                Notification::make()
-                                    ->title('Thành Công!')
-                                    ->body('Video đã được xóa khỏi hệ thống.')
-                                    ->success()
-                                    ->duration(5000)
-                                    ->send();
+                                // 4. Thông báo kết quả
+                                if (empty($errors)) {
+                                    $message = "'{$videoTitle}' ({$videoType}) đã được xóa thành công";
+                                    if ($deleteFromYouTube && $record->video_id) {
+                                        $message .= " khỏi YouTube và hệ thống.";
+                                    } else {
+                                        $message .= " khỏi hệ thống.";
+                                    }
+
+                                    Notification::make()
+                                        ->title('Thành Công!')
+                                        ->body($message)
+                                        ->success()
+                                        ->duration(8000)
+                                        ->send();
+                                } else {
+                                    // Có lỗi nhưng vẫn xóa được bản ghi
+                                    Notification::make()
+                                        ->title('Một Phần Thành Công')
+                                        ->body("Video đã bị xóa khỏi hệ thống. Tuy nhiên: " . implode('; ', $errors))
+                                        ->warning()
+                                        ->duration(10000)
+                                        ->send();
+                                }
+
                             } catch (\Exception $e) {
                                 Notification::make()
                                     ->title('Lỗi!')
                                     ->body('Không thể xóa video: ' . $e->getMessage())
                                     ->danger()
-                                    ->duration(8000)
+                                    ->duration(10000)
                                     ->send();
+
+                                \Log::error('Video deletion failed: ' . $e->getMessage());
                             }
                         }),
                 ])->tooltip('Tùy chọn')
@@ -633,36 +977,227 @@ class YouTubeVideoResource extends Resource
             ])
 
             ->bulkActions([
+                // ========== CẬP NHẬT BULK DELETE ==========
                 Tables\Actions\DeleteBulkAction::make()
                     ->label('Xóa Các Video Đã Chọn')
                     ->modalHeading('Xóa Các Video')
-                    ->modalSubheading('Bạn có chắc chắn muốn xóa các video này? Hành động này chỉ xóa bản ghi trong hệ thống, không xóa video trên YouTube.')
+                    ->modalSubheading('Chọn cách thức xóa các video đã chọn.')
                     ->modalButton('Xác Nhận Xóa')
                     ->color('danger')
-                    ->action(function ($records) {
-                        try {
-                            $count = 0;
-                            foreach ($records as $record) {
-                                // Xóa file video nếu chưa được đăng
-                                if (!is_null($record->video_file) && Storage::disk('local')->exists($record->video_file)) {
-                                    Storage::disk('local')->delete($record->video_file);
+                    ->form([
+                        Forms\Components\Checkbox::make('delete_from_youtube')
+                            ->label('Xóa tất cả video trên YouTube')
+                            ->helperText('Video sẽ bị xóa vĩnh viễn trên YouTube và không thể khôi phục')
+                            ->default(false),
+
+                        Forms\Components\Checkbox::make('delete_local_files')
+                            ->label('Xóa tất cả file video cục bộ')
+                            ->helperText('Xóa các file video được lưu trữ trên server')
+                            ->default(true),
+
+                        Forms\Components\Checkbox::make('confirm_bulk_delete')
+                            ->label('Tôi hiểu rằng hành động này không thể hoàn tác')
+                            ->required()
+                            ->accepted(),
+                    ])
+                    ->action(function ($records, array $data) {
+                        $deleteFromYouTube = $data['delete_from_youtube'] ?? false;
+                        $deleteLocalFiles = $data['delete_local_files'] ?? true;
+
+                        $successCount = 0;
+                        $errorCount = 0;
+                        $errors = [];
+
+                        foreach ($records as $record) {
+                            try {
+                                // Xóa trên YouTube nếu được yêu cầu
+                                if ($deleteFromYouTube && $record->video_id) {
+                                    try {
+                                        $platformAccount = $record->platformAccount;
+                                        if ($platformAccount) {
+                                            $client = new Google_Client();
+                                            $client->setAccessToken(json_decode($platformAccount->access_token, true));
+
+                                            // Refresh token if needed
+                                            if ($client->isAccessTokenExpired()) {
+                                                $facebookAccount = DB::table('facebook_accounts')
+                                                    ->where('platform_id', 3)
+                                                    ->first();
+
+                                                if ($facebookAccount) {
+                                                    $client->setClientId($facebookAccount->app_id);
+                                                    $client->setClientSecret($facebookAccount->app_secret);
+                                                    $client->setRedirectUri($facebookAccount->redirect_url);
+                                                    $client->refreshToken($client->getRefreshToken());
+
+                                                    $newToken = $client->getAccessToken();
+                                                    $platformAccount->update(['access_token' => json_encode($newToken)]);
+                                                }
+                                            }
+
+                                            $youtube = new Google_Service_YouTube($client);
+                                            $youtube->videos->delete($record->video_id);
+
+                                            \Log::info("Bulk deleted video from YouTube: {$record->video_id}");
+                                        }
+                                    } catch (\Google_Service_Exception $e) {
+                                        if ($e->getCode() !== 404) { // Ignore not found errors
+                                            $errors[] = "Lỗi xóa '{$record->title}' trên YouTube: " . $e->getMessage();
+                                        }
+                                    } catch (\Exception $e) {
+                                        $errors[] = "Lỗi xóa '{$record->title}' trên YouTube: " . $e->getMessage();
+                                    }
                                 }
+
+                                // Xóa file cục bộ nếu được yêu cầu
+                                if ($deleteLocalFiles && $record->video_file) {
+                                    try {
+                                        if (Storage::disk('local')->exists($record->video_file)) {
+                                            Storage::disk('local')->delete($record->video_file);
+                                        }
+                                    } catch (\Exception $e) {
+                                        $errors[] = "Lỗi xóa file '{$record->title}': " . $e->getMessage();
+                                    }
+                                }
+
+                                // Xóa bản ghi
                                 $record->delete();
-                                $count++;
+                                $successCount++;
+
+                            } catch (\Exception $e) {
+                                $errorCount++;
+                                $errors[] = "Lỗi xóa '{$record->title}': " . $e->getMessage();
+                                \Log::error("Bulk delete error for video {$record->id}: " . $e->getMessage());
+                            }
+                        }
+
+                        // Thông báo kết quả
+                        if ($errorCount === 0) {
+                            $message = "Đã xóa thành công {$successCount} video";
+                            if ($deleteFromYouTube) {
+                                $message .= " khỏi YouTube và hệ thống.";
+                            } else {
+                                $message .= " khỏi hệ thống.";
                             }
 
                             Notification::make()
                                 ->title('Thành Công!')
-                                ->body("Đã xóa {$count} video khỏi hệ thống.")
+                                ->body($message)
                                 ->success()
-                                ->duration(5000)
-                                ->send();
-                        } catch (\Exception $e) {
-                            Notification::make()
-                                ->title('Lỗi!')
-                                ->body('Không thể xóa video: ' . $e->getMessage())
-                                ->danger()
                                 ->duration(8000)
+                                ->send();
+                        } else {
+                            $message = "Đã xóa {$successCount} video thành công, {$errorCount} video lỗi.";
+                            if (!empty($errors)) {
+                                $message .= " Lỗi: " . implode('; ', array_slice($errors, 0, 3));
+                                if (count($errors) > 3) {
+                                    $message .= "... và " . (count($errors) - 3) . " lỗi khác.";
+                                }
+                            }
+
+                            Notification::make()
+                                ->title('Một Phần Thành Công')
+                                ->body($message)
+                                ->warning()
+                                ->duration(12000)
+                                ->send();
+                        }
+                    }),
+
+                // ========== THÊM BULK ACTION XÓA CHỈ YOUTUBE ==========
+                Tables\Actions\BulkAction::make('delete_youtube_only_bulk')
+                    ->label('Chỉ Xóa Trên YouTube')
+                    ->icon('heroicon-o-trash')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading('Xóa Các Video Trên YouTube')
+                    ->modalDescription('Các video sẽ bị xóa vĩnh viễn trên YouTube nhưng bản ghi vẫn được giữ trong hệ thống.')
+                    ->modalSubmitActionLabel('Xóa Trên YouTube')
+                    ->action(function ($records) {
+                        $successCount = 0;
+                        $errorCount = 0;
+                        $errors = [];
+
+                        foreach ($records as $record) {
+                            if (!$record->video_id) {
+                                continue; // Skip videos not uploaded to YouTube
+                            }
+
+                            try {
+                                $platformAccount = $record->platformAccount;
+                                if (!$platformAccount) {
+                                    throw new \Exception('Không tìm thấy kênh YouTube.');
+                                }
+
+                                $client = new Google_Client();
+                                $client->setAccessToken(json_decode($platformAccount->access_token, true));
+
+                                if ($client->isAccessTokenExpired()) {
+                                    $facebookAccount = DB::table('facebook_accounts')
+                                        ->where('platform_id', 3)
+                                        ->first();
+
+                                    if ($facebookAccount) {
+                                        $client->setClientId($facebookAccount->app_id);
+                                        $client->setClientSecret($facebookAccount->app_secret);
+                                        $client->setRedirectUri($facebookAccount->redirect_url);
+                                        $client->refreshToken($client->getRefreshToken());
+
+                                        $newToken = $client->getAccessToken();
+                                        $platformAccount->update(['access_token' => json_encode($newToken)]);
+                                    }
+                                }
+
+                                $youtube = new Google_Service_YouTube($client);
+                                $youtube->videos->delete($record->video_id);
+
+                                // Update record to mark as deleted from YouTube
+                                $record->update([
+                                    'video_id' => null,
+                                    'upload_status' => 'deleted_from_youtube',
+                                    'upload_error' => 'Video đã bị xóa trên YouTube lúc ' . now()->format('d/m/Y H:i:s')
+                                ]);
+
+                                $successCount++;
+
+                            } catch (\Google_Service_Exception $e) {
+                                if ($e->getCode() === 404) {
+                                    // Video not found, update record anyway
+                                    $record->update([
+                                        'video_id' => null,
+                                        'upload_status' => 'not_found_on_youtube',
+                                        'upload_error' => 'Video không tồn tại trên YouTube'
+                                    ]);
+                                    $successCount++;
+                                } else {
+                                    $errorCount++;
+                                    $errors[] = "Lỗi xóa '{$record->title}': " . $e->getMessage();
+                                }
+                            } catch (\Exception $e) {
+                                $errorCount++;
+                                $errors[] = "Lỗi xóa '{$record->title}': " . $e->getMessage();
+                            }
+                        }
+
+                        // Show result notification
+                        if ($errorCount === 0) {
+                            Notification::make()
+                                ->title('Thành Công!')
+                                ->body("Đã xóa {$successCount} video trên YouTube. Bản ghi vẫn được giữ.")
+                                ->success()
+                                ->duration(8000)
+                                ->send();
+                        } else {
+                            $message = "Đã xóa {$successCount} video, {$errorCount} video lỗi.";
+                            if (!empty($errors)) {
+                                $message .= " " . implode('; ', array_slice($errors, 0, 2));
+                            }
+
+                            Notification::make()
+                                ->title('Một Phần Thành Công')
+                                ->body($message)
+                                ->warning()
+                                ->duration(10000)
                                 ->send();
                         }
                     }),
@@ -792,7 +1327,8 @@ class YouTubeVideoResource extends Resource
                             ->label('Khuyến Nghị')
                             ->state(function ($record) {
                                 if ($record->video_type === 'short') {
-                                    return "📱 Định dạng: Video dọc (9:16), MP4 khuyến nghị\n⏱️ Thời lượng: Tối đa 60 giây\n🏷️ Tags: " . implode(', ', $record->getAutoTags());
+                                    $tags = ['Shorts', 'YouTubeShorts', 'Viral', 'Trending', 'Entertainment'];
+                                    return "📱 Định dạng: Video dọc (9:16), MP4 khuyến nghị\n⏱️ Thời lượng: Tối đa 60 giây\n🏷️ Tags tối ưu: " . implode(', ', $tags);
                                 }
                                 return "🎬 Định dạng: Video ngang (16:9), MP4/WebM\n⏱️ Thời lượng: Không giới hạn";
                             })
