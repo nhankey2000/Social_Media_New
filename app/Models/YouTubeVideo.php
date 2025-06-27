@@ -19,6 +19,7 @@ class YouTubeVideo extends Model
         'description',
         'category_id',
         'status',
+        'video_type',        // ← THÊM CỘT MỚI
         'scheduled_at',
         'upload_status',
         'upload_error',
@@ -35,7 +36,7 @@ class YouTubeVideo extends Model
         return $this->belongsTo(PlatformAccount::class);
     }
 
-    // ========== THÊM CÁC METHOD SAU ĐÂY ==========
+    // ========== CÁC METHOD HIỆN TẠI ==========
 
     // Scope để lấy video cần đăng
     public function scopePendingUpload($query)
@@ -131,5 +132,139 @@ class YouTubeVideo extends Model
                 return 'primary';
             }
         );
+    }
+
+    // ========== THÊM CÁC METHOD MỚI CHO VIDEO TYPE ==========
+
+    // Kiểm tra video có phải Shorts không
+    public function isShort(): bool
+    {
+        return $this->video_type === 'short';
+    }
+
+    // Kiểm tra video có phải video dài không
+    public function isLong(): bool
+    {
+        return $this->video_type === 'long' || is_null($this->video_type);
+    }
+
+    // Scope để lấy video Shorts
+    public function scopeShorts($query)
+    {
+        return $query->where('video_type', 'short');
+    }
+
+    // Scope để lấy video dài
+    public function scopeLongVideos($query)
+    {
+        return $query->where('video_type', 'long');
+    }
+
+    // Attribute để hiển thị text loại video
+    protected function videoTypeText(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                return match($this->video_type) {
+                    'short' => 'YouTube Shorts',
+                    'long' => 'Video Dài',
+                    default => 'Video Dài',
+                };
+            }
+        );
+    }
+
+    // Attribute để hiển thị icon loại video
+    protected function videoTypeIcon(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                return match($this->video_type) {
+                    'short' => 'heroicon-o-bolt',
+                    'long' => 'heroicon-o-video-camera',
+                    default => 'heroicon-o-video-camera',
+                };
+            }
+        );
+    }
+
+    // Attribute để hiển thị màu loại video
+    protected function videoTypeColor(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                return match($this->video_type) {
+                    'short' => 'warning',
+                    'long' => 'info',
+                    default => 'info',
+                };
+            }
+        );
+    }
+
+    // Method để get description được format cho Shorts
+    public function getFormattedDescription(): string
+    {
+        $description = $this->description;
+
+        if ($this->isShort() && !str_contains(strtolower($description), '#shorts')) {
+            $description = "#Shorts\n\n" . $description;
+        }
+
+        return $description;
+    }
+
+    // Method để tự động tạo tags cho Shorts
+    public function getAutoTags(): array
+    {
+        $tags = [];
+
+        if ($this->isShort()) {
+            $tags = ['Shorts', 'YouTubeShorts', 'Short', 'Viral', 'Trending'];
+        }
+
+        // Extract hashtags từ description
+        if ($this->description) {
+            preg_match_all('/#(\w+)/', $this->description, $matches);
+            if (!empty($matches[1])) {
+                foreach ($matches[1] as $tag) {
+                    if (!in_array(strtolower($tag), array_map('strtolower', $tags)) && count($tags) < 10) {
+                        $tags[] = ucfirst(strtolower($tag));
+                    }
+                }
+            }
+        }
+
+        return array_unique($tags);
+    }
+
+    // Method để get category tối ưu
+    public function getOptimizedCategoryId(): string
+    {
+        if ($this->isShort()) {
+            return '24'; // Entertainment - tốt nhất cho Shorts
+        }
+
+        return $this->category_id;
+    }
+
+    // Method để get thời lượng khuyến nghị
+    public function getRecommendedDuration(): string
+    {
+        return match($this->video_type) {
+            'short' => 'Tối đa 60 giây',
+            'long' => 'Không giới hạn',
+            default => 'Không giới hạn',
+        };
+    }
+
+    // Method để get định dạng khuyến nghị
+    public function getRecommendedFormat(): string
+    {
+        return match($this->video_type) {
+            'short' => 'Video dọc (9:16), MP4 khuyến nghị',
+            'long' => 'Video ngang (16:9), MP4/WebM',
+            default => 'MP4, MPEG hoặc WebM',
+        };
     }
 }

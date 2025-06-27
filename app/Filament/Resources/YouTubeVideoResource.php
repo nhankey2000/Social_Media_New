@@ -121,6 +121,27 @@ class YouTubeVideoResource extends Resource
                                     ->helperText('Chọn trạng thái hiển thị của video'),
                             ]),
 
+                        // ========== THÊM FIELD LOẠI VIDEO ==========
+                        Forms\Components\Select::make('video_type')
+                            ->label('Loại Video')
+                            ->options([
+                                'long' => '📹 Video Dài (Thông thường)',
+                                'short' => '⚡ YouTube Shorts (Tối đa 60 giây)',
+                            ])
+                            ->required()
+                            ->default('long')
+                            ->live()
+                            ->extraAttributes([
+                                'class' => 'bg-gradient-to-r from-indigo-50 to-blue-50 border-2 border-indigo-300 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100'
+                            ])
+                            ->helperText('YouTube Shorts: Video dọc, tối đa 60 giây, hiển thị trong tab Shorts')
+                            ->afterStateUpdated(function ($state, $set) {
+                                if ($state === 'short') {
+                                    $set('category_id', '24'); // Entertainment cho Shorts
+                                }
+                            })
+                            ->columnSpanFull(),
+
                         Forms\Components\FileUpload::make('video_file')
                             ->label('File Video')
                             ->required()
@@ -131,7 +152,13 @@ class YouTubeVideoResource extends Resource
                             ->extraAttributes([
                                 'class' => 'bg-gradient-to-r from-teal-50 to-cyan-50 border-2 border-teal-300 rounded-xl focus:border-teal-500 focus:ring-4 focus:ring-teal-100'
                             ])
-                            ->helperText('File video MP4, MPEG hoặc WebM, tối đa 1GB')
+                            ->helperText(function ($get) {
+                                $videoType = $get('video_type');
+                                if ($videoType === 'short') {
+                                    return '📱 YouTube Shorts: Video dọc (9:16), tối đa 60 giây, định dạng MP4 khuyến nghị';
+                                }
+                                return '🎬 Video dài: MP4, MPEG hoặc WebM, tối đa 1GB';
+                            })
                             ->columnSpanFull(),
 
                         Forms\Components\DateTimePicker::make('scheduled_at')
@@ -184,6 +211,15 @@ class YouTubeVideoResource extends Resource
                     ->badge()
                     ->color('secondary'),
 
+                // ========== THÊM CỘT LOẠI VIDEO ==========
+                Tables\Columns\TextColumn::make('video_type')
+                    ->label('Loại')
+                    ->badge()
+                    ->color(fn($record) => $record->video_type_color ?? 'gray')
+                    ->icon(fn($record) => $record->video_type_icon ?? 'heroicon-o-video-camera')
+                    ->formatStateUsing(fn($record) => $record->video_type_text ?? 'N/A')
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('scheduled_at')
                     ->label('Lịch Đăng')
                     ->dateTime('d/m/Y H:i')
@@ -211,7 +247,7 @@ class YouTubeVideoResource extends Resource
                 Tables\Columns\TextColumn::make('upload_status_text')
                     ->label('Trạng Thái Upload')
                     ->badge()
-                    ->color(fn($record) => $record->upload_status_color)
+                    ->color(fn($record) => $record->upload_status_color ?? 'gray')
                     ->icon(function ($record) {
                         return match($record->upload_status ?? 'pending') {
                             'pending' => 'heroicon-o-clock',
@@ -221,20 +257,6 @@ class YouTubeVideoResource extends Resource
                             default => 'heroicon-o-question-mark-circle',
                         };
                     }),
-
-                Tables\Columns\TextColumn::make('video_file')
-                    ->label('File Video')
-                    ->formatStateUsing(function ($state) {
-                        if (!$state) {
-                            return 'Không có file';
-                        }
-                        $fileName = basename($state);
-                        return strlen($fileName) > 15 ? substr($fileName, 0, 12) . '...' : $fileName;
-                    })
-                    ->badge()
-                    ->color(fn($state) => $state ? 'success' : 'gray')
-                    ->icon(fn($state) => $state ? 'heroicon-o-document-text' : 'heroicon-o-x-circle')
-                    ->tooltip(fn($state) => $state ? basename($state) : 'Không có file video'),
 
                 Tables\Columns\TextColumn::make('video_id')
                     ->label('Video ID')
@@ -248,22 +270,6 @@ class YouTubeVideoResource extends Resource
                     ->openUrlInNewTab()
                     ->placeholder('Chưa đăng')
                     ->limit(12),
-
-                Tables\Columns\TextColumn::make('status')
-                    ->label('Trạng Thái')
-                    ->badge()
-                    ->color(fn($state) => match ($state) {
-                        'public' => 'success',
-                        'private' => 'warning',
-                        'unlisted' => 'gray',
-                        default => 'gray',
-                    })
-                    ->formatStateUsing(fn($state) => match ($state) {
-                        'public' => 'Công khai',
-                        'private' => 'Riêng tư',
-                        'unlisted' => 'Không công khai',
-                        default => $state,
-                    }),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Ngày Tạo')
@@ -280,6 +286,15 @@ class YouTubeVideoResource extends Resource
                     ->relationship('platformAccount', 'name')
                     ->multiple()
                     ->preload(),
+
+                // ========== THÊM FILTER LOẠI VIDEO ==========
+                Tables\Filters\SelectFilter::make('video_type')
+                    ->label('Lọc theo loại video')
+                    ->options([
+                        'long' => 'Video Dài',
+                        'short' => 'YouTube Shorts',
+                    ])
+                    ->multiple(),
 
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Lọc theo trạng thái')
@@ -318,6 +333,10 @@ class YouTubeVideoResource extends Resource
                 Tables\Filters\Filter::make('uploaded')
                     ->label('Đã đăng lên YouTube')
                     ->query(fn($query) => $query->whereNotNull('video_id')),
+
+                Tables\Filters\Filter::make('shorts_only')
+                    ->label('Chỉ YouTube Shorts')
+                    ->query(fn($query) => $query->where('video_type', 'short')),
             ])
             ->actions([
                 Tables\Actions\ActionGroup::make([
@@ -372,8 +391,35 @@ class YouTubeVideoResource extends Resource
                                 $video = new \Google_Service_YouTube_Video();
                                 $snippet = new \Google_Service_YouTube_VideoSnippet();
                                 $snippet->setTitle($record->title);
-                                $snippet->setDescription($record->description);
-                                $snippet->setCategoryId($record->category_id);
+
+                                // ========== XỬ LÝ RIÊNG CHO SHORTS ==========
+                                if ($record->video_type === 'short') {
+                                    // Thêm #Shorts vào đầu description
+                                    $description = $record->description;
+                                    if (!str_contains(strtolower($description), '#shorts')) {
+                                        $description = "#Shorts\n\n" . $description;
+                                    }
+                                    $snippet->setDescription($description);
+
+                                    // Force category Entertainment cho Shorts
+                                    $snippet->setCategoryId('24');
+
+                                    // Tags tối ưu cho Shorts
+                                    $tags = $record->getAutoTags();
+                                    $snippet->setTags(array_slice($tags, 0, 10));
+                                } else {
+                                    // Video dài thông thường
+                                    $snippet->setDescription($record->description);
+                                    $snippet->setCategoryId($record->category_id);
+
+                                    // Tags thông thường
+                                    preg_match_all('/#(\w+)/', $record->description, $matches);
+                                    if (!empty($matches[1])) {
+                                        $tags = array_slice($matches[1], 0, 10);
+                                        $snippet->setTags($tags);
+                                    }
+                                }
+
                                 $video->setSnippet($snippet);
 
                                 $status = new \Google_Service_YouTube_VideoStatus();
@@ -414,9 +460,10 @@ class YouTubeVideoResource extends Resource
                                     'upload_error' => null
                                 ]);
 
+                                $videoTypeText = $record->video_type === 'short' ? 'YouTube Shorts' : 'Video dài';
                                 Notification::make()
                                     ->title('Thành Công!')
-                                    ->body('Video đã được đăng lên YouTube thành công.')
+                                    ->body("{$videoTypeText} đã được đăng lên YouTube thành công.")
                                     ->success()
                                     ->duration(8000)
                                     ->send();
@@ -607,6 +654,14 @@ class YouTubeVideoResource extends Resource
                                     ->badge()
                                     ->color('secondary'),
 
+                                // ========== HIỂN THỊ LOẠI VIDEO ==========
+                                Infolists\Components\TextEntry::make('video_type')
+                                    ->label('Loại Video')
+                                    ->badge()
+                                    ->color(fn($record) => $record->video_type_color ?? 'gray')
+                                    ->icon(fn($record) => $record->video_type_icon ?? 'heroicon-o-video-camera')
+                                    ->formatStateUsing(fn($record) => $record->video_type_text ?? 'N/A'),
+
                                 Infolists\Components\TextEntry::make('scheduled_at')
                                     ->label('Lịch Đăng')
                                     ->dateTime('d/m/Y H:i:s')
@@ -625,7 +680,7 @@ class YouTubeVideoResource extends Resource
                                 Infolists\Components\TextEntry::make('upload_status_text')
                                     ->label('Trạng Thái Upload')
                                     ->badge()
-                                    ->color(fn($record) => $record->upload_status_color),
+                                    ->color(fn($record) => $record->upload_status_color ?? 'gray'),
 
                                 Infolists\Components\TextEntry::make('status')
                                     ->label('Trạng Thái')
@@ -689,6 +744,20 @@ class YouTubeVideoResource extends Resource
                             ->markdown()
                             ->columnSpanFull(),
 
+                        // ========== HIỂN THỊ THÔNG TIN SHORTS ==========
+                        Infolists\Components\TextEntry::make('video_recommendations')
+                            ->label('Khuyến Nghị')
+                            ->state(function ($record) {
+                                if ($record->video_type === 'short') {
+                                    return "📱 Định dạng: Video dọc (9:16), MP4 khuyến nghị\n⏱️ Thời lượng: Tối đa 60 giây\n🏷️ Tags: " . implode(', ', $record->getAutoTags());
+                                }
+                                return "🎬 Định dạng: Video ngang (16:9), MP4/WebM\n⏱️ Thời lượng: Không giới hạn";
+                            })
+                            ->badge()
+                            ->color(fn($record) => $record->video_type === 'short' ? 'warning' : 'info')
+                            ->visible(fn($record) => $record->video_type)
+                            ->columnSpanFull(),
+
                         Infolists\Components\TextEntry::make('upload_error')
                             ->label('Lỗi Upload')
                             ->color('danger')
@@ -744,14 +813,19 @@ class YouTubeVideoResource extends Resource
 
                                 $filename = basename($record->video_file);
                                 $videoUrl = url('/storage/youtube-videos/' . $filename);
+                                $videoTypeClass = $record->video_type === 'short' ? 'max-width: 400px; max-height: 700px;' : 'max-height: 500px;';
+                                $videoTypeLabel = $record->video_type === 'short' ? '⚡ YouTube Shorts' : '🎬 Video Dài';
 
                                 return '<div class="bg-gray-900 rounded-xl overflow-hidden shadow-2xl border border-gray-700">
                                     <div class="bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-3">
-                                        <div class="flex items-center space-x-2">
-                                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                            </svg>
-                                            <h3 class="text-white font-semibold">' . htmlspecialchars($record->title) . '</h3>
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center space-x-2">
+                                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                </svg>
+                                                <h3 class="text-white font-semibold">' . htmlspecialchars($record->title) . '</h3>
+                                            </div>
+                                            <span class="text-white text-sm font-medium">' . $videoTypeLabel . '</span>
                                         </div>
                                     </div>
 
@@ -759,8 +833,8 @@ class YouTubeVideoResource extends Resource
                                         <video
                                             controls
                                             preload="metadata"
-                                            class="w-full h-auto rounded-lg shadow-lg bg-black"
-                                            style="max-height: 500px;"
+                                            class="w-full h-auto rounded-lg shadow-lg bg-black mx-auto"
+                                            style="' . $videoTypeClass . '"
                                             controlsList="nodownload"
                                         >
                                             <source src="' . $videoUrl . '" type="video/mp4">
@@ -771,7 +845,7 @@ class YouTubeVideoResource extends Resource
                                     </div>
 
                                     <div class="px-4 pb-4">
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-400">
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-400">
                                             <div class="flex items-center space-x-2">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -783,6 +857,12 @@ class YouTubeVideoResource extends Resource
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
                                                 </svg>
                                                 <span>' . number_format(Storage::disk('local')->size($record->video_file) / (1024 * 1024), 2) . ' MB</span>
+                                            </div>
+                                            <div class="flex items-center space-x-2">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2h4a1 1 0 110 2h-1v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6H3a1 1 0 110-2h4z"/>
+                                                </svg>
+                                                <span>' . $videoTypeLabel . '</span>
                                             </div>
                                         </div>
                                     </div>
