@@ -36,7 +36,8 @@ class UploadYouTubeVideoJob implements ShouldQueue
         try {
             Log::info('Starting YouTube upload job', [
                 'video_id' => $this->video->id,
-                'title' => $this->video->title
+                'title' => $this->video->title,
+                'video_type' => $this->video->video_type ?? 'long'
             ]);
 
             // Cập nhật trạng thái đang upload
@@ -76,25 +77,166 @@ class UploadYouTubeVideoJob implements ShouldQueue
 
             $youtube = new Google_Service_YouTube($client);
 
-            // Tạo video object
+            // ========== TẠO VIDEO OBJECT VỚI XỬ LÝ SHORTS ==========
             $videoObj = new \Google_Service_YouTube_Video();
             $snippet = new \Google_Service_YouTube_VideoSnippet();
-            $snippet->setTitle($this->video->title);
-            $snippet->setDescription($this->video->description);
-            $snippet->setCategoryId($this->video->category_id);
+
+            // ========== XỬ LÝ TITLE CHO SHORTS ==========
+            if ($this->video->video_type === 'short') {
+                $title = $this->video->title;
+                if (!str_contains(strtolower($title), '#shorts') && !str_contains(strtolower($title), 'shorts')) {
+                    $title = $title . ' #Shorts';
+                }
+                $snippet->setTitle($title);
+
+                Log::info('Setting Shorts title', ['original' => $this->video->title, 'new' => $title]);
+            } else {
+                $snippet->setTitle($this->video->title);
+            }
+
+            // ========== XỬ LÝ DESCRIPTION CHO SHORTS ==========
+            if ($this->video->video_type === 'short') {
+                // Tạo description tối ưu cho Shorts
+                $description = "#Shorts #YouTubeShorts\n\n" . $this->video->description;
+
+                // Thêm hashtags phổ biến cho Shorts
+                $shortsTags = [
+                    '#Viral', '#Trending', '#QuickVideo', '#ShortVideo',
+                    '#Entertainment', '#Fun', '#Amazing', '#MustWatch'
+                ];
+
+                // Random chọn 2-3 hashtags để tránh spam
+                $selectedTags = array_rand(array_flip($shortsTags), min(3, count($shortsTags)));
+                if (is_string($selectedTags)) $selectedTags = [$selectedTags];
+
+                $description .= "\n\n" . implode(' ', $selectedTags);
+
+                $snippet->setDescription($description);
+
+                Log::info('Setting Shorts description', ['description' => substr($description, 0, 100) . '...']);
+            } else {
+                $snippet->setDescription($this->video->description);
+            }
+
+            // ========== CATEGORY VÀ TAGS CHO SHORTS ==========
+            if ($this->video->video_type === 'short') {
+                // Force Entertainment category cho Shorts
+                $snippet->setCategoryId('24');
+
+                // Tags tối ưu cho Shorts
+                $tags = [
+                    'Shorts',
+                    'YouTubeShorts',
+                    'Short',
+                    'Viral',
+                    'Trending',
+                    'QuickVideo',
+                    'ShortForm',
+                    'Mobile'
+                ];
+
+                // Thêm tags từ title và description
+                $content = strtolower($this->video->title . ' ' . $this->video->description);
+
+                // Detect content type và thêm tags phù hợp
+                if (str_contains($content, 'funny') || str_contains($content, 'hài') || str_contains($content, 'comedy')) {
+                    $tags[] = 'Comedy';
+                    $tags[] = 'Funny';
+                }
+
+                if (str_contains($content, 'music') || str_contains($content, 'nhạc') || str_contains($content, 'song')) {
+                    $tags[] = 'Music';
+                    $tags[] = 'Song';
+                }
+
+                if (str_contains($content, 'dance') || str_contains($content, 'nhảy')) {
+                    $tags[] = 'Dance';
+                    $tags[] = 'Dancing';
+                }
+
+                if (str_contains($content, 'food') || str_contains($content, 'ăn') || str_contains($content, 'cooking')) {
+                    $tags[] = 'Food';
+                    $tags[] = 'Cooking';
+                }
+
+                if (str_contains($content, 'game') || str_contains($content, 'gaming')) {
+                    $tags[] = 'Gaming';
+                    $tags[] = 'Game';
+                }
+
+                // Extract hashtags từ description
+                preg_match_all('/#(\w+)/', $this->video->description, $matches);
+                if (!empty($matches[1])) {
+                    foreach ($matches[1] as $tag) {
+                        if (!in_array($tag, $tags) && count($tags) < 15) {
+                            $tags[] = ucfirst(strtolower($tag));
+                        }
+                    }
+                }
+
+                // Giới hạn 15 tags (YouTube limit)
+                $tags = array_unique(array_slice($tags, 0, 15));
+                $snippet->setTags($tags);
+
+                Log::info('Setting Shorts tags', ['tags' => $tags]);
+
+            } else {
+                // Video dài thông thường
+                $snippet->setCategoryId($this->video->category_id);
+
+                // Tags cho video dài
+                preg_match_all('/#(\w+)/', $this->video->description, $matches);
+                if (!empty($matches[1])) {
+                    $tags = array_slice($matches[1], 0, 10);
+                    $snippet->setTags($tags);
+                }
+            }
+
             $videoObj->setSnippet($snippet);
 
+            // ========== STATUS CHO SHORTS ==========
             $status = new \Google_Service_YouTube_VideoStatus();
             $status->setPrivacyStatus($this->video->status);
+
+            // Thêm các thuộc tính quan trọng cho Shorts
+            if ($this->video->video_type === 'short') {
+                Log::info('Configuring video for Shorts format', [
+                    'video_id' => $this->video->id,
+                    'title_has_shorts' => str_contains(strtolower($snippet->getTitle()), 'shorts'),
+                    'category' => $snippet->getCategoryId()
+                ]);
+            }
+
             $videoObj->setStatus($status);
 
             // Upload file
             $videoPath = Storage::disk('local')->path($this->video->video_file);
+
+            // ========== KIỂM TRA FILE CHO SHORTS ==========
+            if ($this->video->video_type === 'short') {
+                // Kiểm tra thời lượng video (nên <= 60 giây)
+                $fileSize = filesize($videoPath);
+                $fileSizeMB = $fileSize / (1024 * 1024);
+
+                if ($fileSizeMB > 50) { // Video quá lớn có thể > 60s
+                    Log::warning('Shorts file may be too long', [
+                        'file_size_mb' => $fileSizeMB,
+                        'video_id' => $this->video->id
+                    ]);
+                }
+
+                Log::info('Uploading Shorts video', [
+                    'file_size_mb' => $fileSizeMB,
+                    'video_id' => $this->video->id
+                ]);
+            }
+
             $chunkSizeBytes = 1 * 1024 * 1024; // 1MB
 
             Log::info('Starting video upload to YouTube', [
                 'video_id' => $this->video->id,
-                'file_size' => filesize($videoPath)
+                'file_size' => filesize($videoPath),
+                'video_type' => $this->video->video_type ?? 'long'
             ]);
 
             $client->setDefer(true);
@@ -131,10 +273,12 @@ class UploadYouTubeVideoJob implements ShouldQueue
             // Xóa file sau khi upload thành công
             Storage::disk('local')->delete($this->video->video_file);
 
-            Log::info('YouTube video uploaded successfully via job', [
+            $videoType = $this->video->video_type === 'short' ? 'YouTube Shorts' : 'Video dài';
+            Log::info("$videoType uploaded successfully via job", [
                 'video_id' => $this->video->id,
                 'youtube_id' => $uploadStatus['id'],
-                'title' => $this->video->title
+                'title' => $this->video->title,
+                'video_type' => $this->video->video_type ?? 'long'
             ]);
 
         } catch (\Exception $e) {
@@ -147,6 +291,7 @@ class UploadYouTubeVideoJob implements ShouldQueue
             Log::error('YouTube upload job failed', [
                 'video_id' => $this->video->id,
                 'title' => $this->video->title,
+                'video_type' => $this->video->video_type ?? 'long',
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -164,6 +309,7 @@ class UploadYouTubeVideoJob implements ShouldQueue
         Log::error('YouTube upload job failed permanently', [
             'video_id' => $this->video->id,
             'title' => $this->video->title,
+            'video_type' => $this->video->video_type ?? 'long',
             'error' => $exception->getMessage()
         ]);
 

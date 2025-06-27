@@ -589,6 +589,7 @@ class YouTubeVideoResource extends Resource
                     ->size('sm')
                     ->color('gray'),
             ])
+
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make()
                     ->label('Xóa Các Video Đã Chọn')
