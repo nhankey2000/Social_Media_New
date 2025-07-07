@@ -71,12 +71,7 @@ class UploadScheduledVideos extends Command
             return 0;
         }
 
-        // Xác nhận trước khi upload
-        if (!$this->confirm('Bạn có muốn tiếp tục upload các video này?')) {
-            $this->info('❌ Đã hủy upload.');
-            return 0;
-        }
-
+        // Bỏ xác nhận và bắt đầu upload ngay
         $this->info('🚀 Bắt đầu upload...');
         $this->newLine();
 
@@ -127,7 +122,7 @@ class UploadScheduledVideos extends Command
 
         $this->newLine();
         $this->info("🎯 Kết quả:");
-        $this->info("   ✅ Thành công: {$successCount}");
+        $this->info("   ✅ Thành côngestructura: {$successCount}");
         if ($failCount > 0) {
             $this->error("   ❌ Thất bại: {$failCount}");
         }

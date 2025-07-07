@@ -854,8 +854,8 @@ class YouTubeVideoResource extends Resource
                                     </div>';
                                 }
 
-                                $filename = basename($record->video_file);
                                 $videoUrl = url('/storage/youtube-videos/' . $filename);
+                                $filename = basename($record->video_file);
                                 $videoTypeClass = $record->video_type === 'short' ? 'max-width: 400px; max-height: 700px;' : 'max-height: 500px;';
                                 $videoTypeLabel = $record->video_type === 'short' ? '⚡ YouTube Shorts' : '🎬 Video Dài';
 

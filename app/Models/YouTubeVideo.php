@@ -19,7 +19,7 @@ class YouTubeVideo extends Model
         'description',
         'category_id',
         'status',
-        'video_type',        // ← THÊM CỘT MỚI
+        'video_type',
         'scheduled_at',
         'upload_status',
         'upload_error',

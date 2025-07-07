@@ -55,30 +55,30 @@ class InstagramService
     }
 
     /**
-     * Post an image or video to Instagram
+     * Đăng một hình ảnh hoặc video lên Instagram
      *
      * @param PlatformAccount $platformAccount
-     * @param string $message Caption for the post
-     * @param array|null $media Array of media URLs (not file paths)
-     * @param string $mediaType Type of media ('image' or 'video')
-     * @return array Response with post ID or error message
+     * @param string $message Chú thích cho bài đăng
+     * @param array|null $media Mảng các URL phương tiện (không phải đường dẫn tệp)
+     * @param string $mediaType Loại phương tiện ('image' hoặc 'video')
+     * @return array Phản hồi với ID bài đăng hoặc thông báo lỗi
      * @throws \Exception
      */
     public function postInstagram(PlatformAccount $platformAccount, string $message, ?array $media = null, string $mediaType = 'image'): array
     {
         try {
             if (empty($platformAccount->access_token) || empty($platformAccount->page_id)) {
-                throw new \Exception('Access token or Instagram Business Account ID is required.');
+                throw new \Exception('Yêu cầu access token hoặc ID tài khoản Instagram Business.');
             }
 
             if (!$platformAccount->is_active) {
-                throw new \Exception('Instagram account is inactive.');
+                throw new \Exception('Tài khoản Instagram không hoạt động.');
             }
 
             $message = $this->normalizeMessage($message);
 
-            // Log the request details
-            Log::info('Instagram post request', [
+            // Ghi log chi tiết yêu cầu
+            Log::info('Yêu cầu đăng bài Instagram', [
                 'account_id' => $platformAccount->id,
                 'page_id' => $platformAccount->page_id,
                 'media_type' => $mediaType,
@@ -86,22 +86,22 @@ class InstagramService
                 'message_length' => strlen($message),
             ]);
 
-            // Step 1: Create media container
+            // Bước 1: Tạo container phương tiện
             $params = [
                 'caption' => $message,
                 'access_token' => $platformAccount->access_token,
             ];
 
             if ($media && count($media) > 0) {
-                $mediaUrl = $media[0]; // Expect URL, not file path
+                $mediaUrl = $media[0]; // Mong đợi URL, không phải đường dẫn tệp
 
-                // FIXED: Validate URL format
+                // Xác thực định dạng URL
                 if (!filter_var($mediaUrl, FILTER_VALIDATE_URL)) {
-                    throw new \Exception('Invalid media URL format: ' . $mediaUrl);
+                    throw new \Exception('Định dạng URL phương tiện không hợp lệ: ' . $mediaUrl);
                 }
 
-                // FIXED: Log the media URL being used
-                Log::info('Using media URL for Instagram', [
+                // Ghi log URL phương tiện được sử dụng
+                Log::info('Sử dụng URL phương tiện cho Instagram', [
                     'media_url' => $mediaUrl,
                     'media_type' => $mediaType
                 ]);
@@ -112,15 +112,15 @@ class InstagramService
                     $params['media_type'] = 'VIDEO';
                     $params['video_url'] = $mediaUrl;
                 } else {
-                    throw new \Exception('Unsupported media type: ' . $mediaType);
+                    throw new \Exception('Loại phương tiện không được hỗ trợ: ' . $mediaType);
                 }
             } else {
-                throw new \Exception('Media URL is required for Instagram post.');
+                throw new \Exception('Yêu cầu URL phương tiện cho bài đăng Instagram.');
             }
 
-            // Log the API request (hide access token)
-            Log::info('Instagram API request params', [
-                'params' => array_merge($params, ['access_token' => '[HIDDEN]'])
+            // Ghi log yêu cầu API (ẩn access token)
+            Log::info('Tham số yêu cầu API Instagram', [
+                'params' => array_merge($params, ['access_token' => '[ẨN]'])
             ]);
 
             $response = $this->client->post("{$platformAccount->page_id}/media", [
@@ -129,27 +129,27 @@ class InstagramService
 
             $containerData = json_decode($response->getBody()->getContents(), true);
 
-            Log::info('Instagram container creation response', [
+            Log::info('Phản hồi tạo container Instagram', [
                 'response' => $containerData
             ]);
 
             if (isset($containerData['error'])) {
-                throw new \Exception('Failed to create media container: ' . json_encode($containerData['error']));
+                throw new \Exception('Không thể tạo container phương tiện: ' . json_encode($containerData['error']));
             }
 
             if (!isset($containerData['id'])) {
-                throw new \Exception('No container ID returned from Instagram API.');
+                throw new \Exception('Không có ID container được trả về từ API Instagram.');
             }
 
             $containerId = $containerData['id'];
 
-            // Step 2: Publish the media container
+            // Bước 2: Xuất bản container phương tiện
             $publishParams = [
                 'creation_id' => $containerId,
                 'access_token' => $platformAccount->access_token,
             ];
 
-            Log::info('Instagram publish request', [
+            Log::info('Yêu cầu xuất bản Instagram', [
                 'creation_id' => $containerId,
                 'page_id' => $platformAccount->page_id
             ]);
@@ -160,12 +160,12 @@ class InstagramService
 
             $publishData = json_decode($publishResponse->getBody()->getContents(), true);
 
-            Log::info('Instagram publish response', [
+            Log::info('Phản hồi xuất bản Instagram', [
                 'response' => $publishData
             ]);
 
             if (isset($publishData['error'])) {
-                throw new \Exception('Failed to publish media: ' . json_encode($publishData['error']));
+                throw new \Exception('Không thể xuất bản phương tiện: ' . json_encode($publishData['error']));
             }
 
             return [
@@ -175,7 +175,7 @@ class InstagramService
 
         } catch (RequestException $e) {
             $errorMessage = $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
-            Log::error('Instagram post failed (RequestException)', [
+            Log::error('Đăng bài Instagram thất bại (RequestException)', [
                 'error' => $errorMessage,
                 'account_id' => $platformAccount->id ?? null,
                 'media_type' => $mediaType ?? null,
@@ -183,10 +183,10 @@ class InstagramService
             ]);
             return [
                 'success' => false,
-                'error' => 'Failed to post to Instagram: ' . $errorMessage,
+                'error' => 'Không thể đăng bài lên Instagram: ' . $errorMessage,
             ];
         } catch (\Exception $e) {
-            Log::error('Instagram post failed (Exception)', [
+            Log::error('Đăng bài Instagram thất bại (Exception)', [
                 'error' => $e->getMessage(),
                 'account_id' => $platformAccount->id ?? null,
                 'media_type' => $mediaType ?? null,
@@ -194,225 +194,41 @@ class InstagramService
             ]);
             return [
                 'success' => false,
-                'error' => 'Failed to post to Instagram: ' . $e->getMessage(),
+                'error' => 'Không thể đăng bài lên Instagram: ' . $e->getMessage(),
             ];
         }
     }
 
     /**
-     * Edit an Instagram post
-     * Logic: If media changes -> delete old post and create new one
-     *        If only caption changes -> update caption directly
+     * Xóa một bài đăng Instagram
      *
      * @param PlatformAccount $platformAccount
-     * @param string $instagramPostId Current Instagram post ID
-     * @param string $newMessage New caption for the post
-     * @param array|null $newMedia New media URLs (if changing media)
-     * @param string $mediaType Type of media ('image' or 'video')
-     * @param array|null $oldMedia Old media URLs for comparison
-     * @return array Response with success status or error message
-     */
-    public function editInstagramPost(PlatformAccount $platformAccount, string $instagramPostId, string $newMessage, ?array $newMedia = null, string $mediaType = 'image', ?array $oldMedia = null): array
-    {
-        try {
-            if (empty($platformAccount->access_token)) {
-                throw new \Exception('Access token is required.');
-            }
-
-            if (!$platformAccount->is_active) {
-                throw new \Exception('Instagram account is inactive.');
-            }
-
-            if (empty($instagramPostId)) {
-                throw new \Exception('Instagram post ID is required.');
-            }
-
-            $newMessage = $this->normalizeMessage($newMessage);
-
-            // Log the edit request details
-            Log::info('Instagram edit post request', [
-                'account_id' => $platformAccount->id,
-                'page_id' => $platformAccount->page_id,
-                'instagram_post_id' => $instagramPostId,
-                'new_media' => $newMedia,
-                'old_media' => $oldMedia,
-                'media_type' => $mediaType,
-                'message_length' => strlen($newMessage),
-            ]);
-
-            // Check if media has changed
-            $mediaChanged = $this->hasMediaChanged($newMedia, $oldMedia);
-
-            if ($mediaChanged) {
-                Log::info('Media changed - will delete old post and create new one', [
-                    'instagram_post_id' => $instagramPostId
-                ]);
-
-                // Step 1: Delete the old post
-                $deleteResult = $this->deleteInstagramPost($platformAccount, $instagramPostId);
-
-                if (!$deleteResult['success']) {
-                    Log::warning('Failed to delete old post during edit', [
-                        'delete_error' => $deleteResult['error'],
-                        'instagram_post_id' => $instagramPostId
-                    ]);
-                    // Continue with creating new post even if delete failed
-                }
-
-                // Step 2: Create new post with new media and caption
-                $postResult = $this->postInstagram($platformAccount, $newMessage, $newMedia, $mediaType);
-
-                if ($postResult['success']) {
-                    return [
-                        'success' => true,
-                        'action' => 'recreated',
-                        'old_post_id' => $instagramPostId,
-                        'new_post_id' => $postResult['post_id'],
-                        'message' => 'Post recreated successfully with new media.',
-                    ];
-                } else {
-                    return [
-                        'success' => false,
-                        'error' => 'Failed to create new post after deleting old one: ' . $postResult['error'],
-                    ];
-                }
-            } else {
-                Log::info('Only caption changed - will update existing post', [
-                    'instagram_post_id' => $instagramPostId
-                ]);
-
-                // Only caption changed - update the existing post
-                $updateResult = $this->updateInstagramCaption($platformAccount, $instagramPostId, $newMessage);
-
-                if ($updateResult['success']) {
-                    return [
-                        'success' => true,
-                        'action' => 'updated',
-                        'post_id' => $instagramPostId,
-                        'message' => 'Post caption updated successfully.',
-                    ];
-                } else {
-                    return $updateResult;
-                }
-            }
-
-        } catch (\Exception $e) {
-            Log::error('Instagram edit post failed (Exception)', [
-                'error' => $e->getMessage(),
-                'account_id' => $platformAccount->id ?? null,
-                'instagram_post_id' => $instagramPostId ?? null,
-            ]);
-
-            return [
-                'success' => false,
-                'error' => 'Failed to edit Instagram post: ' . $e->getMessage(),
-            ];
-        }
-    }
-
-    /**
-     * Update only the caption of an existing Instagram post
-     *
-     * @param PlatformAccount $platformAccount
-     * @param string $instagramPostId Instagram post ID
-     * @param string $newCaption New caption text
-     * @return array Response with success status or error message
-     */
-    private function updateInstagramCaption(PlatformAccount $platformAccount, string $instagramPostId, string $newCaption): array
-    {
-        try {
-            // Note: Instagram API doesn't support direct caption editing for published posts
-            // This is a limitation of the Instagram Graph API
-            // We need to inform the user about this limitation
-
-            Log::warning('Instagram API limitation: Cannot update caption of published posts', [
-                'instagram_post_id' => $instagramPostId,
-                'attempted_caption' => $newCaption
-            ]);
-
-            return [
-                'success' => false,
-                'error' => 'Instagram API does not support editing captions of published posts. The post must be recreated.',
-                'suggestion' => 'Please update the media as well to recreate the post, or delete and repost manually.',
-            ];
-
-        } catch (\Exception $e) {
-            Log::error('Instagram update caption failed', [
-                'error' => $e->getMessage(),
-                'instagram_post_id' => $instagramPostId,
-            ]);
-
-            return [
-                'success' => false,
-                'error' => 'Failed to update Instagram caption: ' . $e->getMessage(),
-            ];
-        }
-    }
-
-    /**
-     * Check if media has changed between old and new media arrays
-     *
-     * @param array|null $newMedia
-     * @param array|null $oldMedia
-     * @return bool
-     */
-    private function hasMediaChanged(?array $newMedia, ?array $oldMedia): bool
-    {
-        // If both are null, no change
-        if ($newMedia === null && $oldMedia === null) {
-            return false;
-        }
-
-        // If one is null and other is not, there's a change
-        if ($newMedia === null || $oldMedia === null) {
-            return true;
-        }
-
-        // Compare arrays
-        if (count($newMedia) !== count($oldMedia)) {
-            return true;
-        }
-
-        // Compare each URL
-        for ($i = 0; $i < count($newMedia); $i++) {
-            if (!isset($oldMedia[$i]) || $newMedia[$i] !== $oldMedia[$i]) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Delete an Instagram post
-     *
-     * @param PlatformAccount $platformAccount
-     * @param string $instagramPostId Instagram post ID to delete
-     * @return array Response with success status or error message
+     * @param string $instagramPostId ID bài đăng Instagram cần xóa
+     * @return array Phản hồi với trạng thái thành công hoặc thông báo lỗi
      */
     public function deleteInstagramPost(PlatformAccount $platformAccount, string $instagramPostId): array
     {
         try {
             if (empty($platformAccount->access_token)) {
-                throw new \Exception('Access token is required.');
+                throw new \Exception('Yêu cầu access token.');
             }
 
             if (!$platformAccount->is_active) {
-                throw new \Exception('Instagram account is inactive.');
+                throw new \Exception('Tài khoản Instagram không hoạt động.');
             }
 
             if (empty($instagramPostId)) {
-                throw new \Exception('Instagram post ID is required.');
+                throw new \Exception('Yêu cầu ID bài đăng Instagram.');
             }
 
-            // Log the delete request details
-            Log::info('Instagram delete post request', [
+            // Ghi log chi tiết yêu cầu xóa
+            Log::info('Yêu cầu xóa bài Instagram', [
                 'account_id' => $platformAccount->id,
                 'page_id' => $platformAccount->page_id,
                 'instagram_post_id' => $instagramPostId,
             ]);
 
-            // Send DELETE request to Instagram API
+            // Gửi yêu cầu DELETE đến API Instagram
             $response = $this->client->delete($instagramPostId, [
                 'query' => [
                     'access_token' => $platformAccount->access_token,
@@ -421,33 +237,33 @@ class InstagramService
 
             $responseData = json_decode($response->getBody()->getContents(), true);
 
-            Log::info('Instagram delete response', [
+            Log::info('Phản hồi xóa Instagram', [
                 'response' => $responseData,
                 'instagram_post_id' => $instagramPostId
             ]);
 
             if (isset($responseData['error'])) {
-                throw new \Exception('Failed to delete Instagram post: ' . json_encode($responseData['error']));
+                throw new \Exception('Không thể xóa bài đăng Instagram: ' . json_encode($responseData['error']));
             }
 
-            // Check if deletion was successful
+            // Kiểm tra xem xóa có thành công không
             if (isset($responseData['success']) && $responseData['success'] === true) {
                 return [
                     'success' => true,
-                    'message' => 'Instagram post deleted successfully.',
+                    'message' => 'Đã xóa bài đăng Instagram thành công.',
                 ];
             }
 
-            // If no explicit success flag, assume success if no error
+            // Nếu không có cờ thành công rõ ràng, giả định thành công nếu không có lỗi
             return [
                 'success' => true,
-                'message' => 'Instagram post deleted successfully.',
+                'message' => 'Đã xóa bài đăng Instagram thành công.',
             ];
 
         } catch (RequestException $e) {
             $errorMessage = $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
 
-            // Parse error response if possible
+            // Phân tích phản hồi lỗi nếu có
             if ($e->hasResponse()) {
                 $errorData = json_decode($errorMessage, true);
                 if (isset($errorData['error']['message'])) {
@@ -455,7 +271,7 @@ class InstagramService
                 }
             }
 
-            Log::error('Instagram delete post failed (RequestException)', [
+            Log::error('Xóa bài Instagram thất bại (RequestException)', [
                 'error' => $errorMessage,
                 'account_id' => $platformAccount->id ?? null,
                 'instagram_post_id' => $instagramPostId ?? null,
@@ -464,10 +280,10 @@ class InstagramService
 
             return [
                 'success' => false,
-                'error' => 'Failed to delete Instagram post: ' . $errorMessage,
+                'error' => 'Không thể xóa bài đăng Instagram: ' . $errorMessage,
             ];
         } catch (\Exception $e) {
-            Log::error('Instagram delete post failed (Exception)', [
+            Log::error('Xóa bài Instagram thất bại (Exception)', [
                 'error' => $e->getMessage(),
                 'account_id' => $platformAccount->id ?? null,
                 'instagram_post_id' => $instagramPostId ?? null,
@@ -475,13 +291,13 @@ class InstagramService
 
             return [
                 'success' => false,
-                'error' => 'Failed to delete Instagram post: ' . $e->getMessage(),
+                'error' => 'Không thể xóa bài đăng Instagram: ' . $e->getMessage(),
             ];
         }
     }
 
     /**
-     * Normalize message to ensure compatibility with Instagram API
+     * Chuẩn hóa thông điệp để đảm bảo tương thích với API Instagram
      *
      * @param string $message
      * @return string
