@@ -122,7 +122,7 @@ class UploadScheduledVideos extends Command
 
         $this->newLine();
         $this->info("🎯 Kết quả:");
-        $this->info("   ✅ Thành côngestructura: {$successCount}");
+        $this->info("   ✅ Thành công: {$successCount}");
         if ($failCount > 0) {
             $this->error("   ❌ Thất bại: {$failCount}");
         }
