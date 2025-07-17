@@ -1,10 +1,14 @@
 <?php
+use Illuminate\Support\Facades\Response;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\FacebookController;
 use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\YouTubeOAuthController;
+use App\Http\Controllers\ActivationKeyController;
+
 use App\Models\YouTubeVideo;
 Route::get('/', function () {
     return view('welcome');
@@ -24,8 +28,15 @@ Route::get('/facebook/redirect', [FacebookController::class, 'redirectToFacebook
 Route::get('/facebook/callback', [FacebookController::class, 'handleFacebookCallback'])->name('facebook.callback');
 Route::get('/youtube/auth', [YouTubeOAuthController::class, 'redirectToGoogle']);
 Route::get('/youtube/callback', [YouTubeOAuthController::class, 'handleGoogleCallback']);
-
-
+Route::get('/keys', [ActivationKeyController::class, 'index']);
+Route::post('/keys', [ActivationKeyController::class, 'store']);
+Route::delete('/keys/{id}', [ActivationKeyController::class, 'destroy']);
+Route::get('/check-key', function () {
+    $id = request('id');
+    $exists = DB::table('activation_keys')->where('hardware_id', $id)->exists();
+    return response($exists ? 'OK' : 'NO', 200)
+        ->header('Content-Type', 'text/plain');
+});
 Route::get('/storage/youtube-videos/{filename}', function ($filename) {
     $path = 'youtube-videos/' . $filename;
 
