@@ -853,9 +853,9 @@ class YouTubeVideoResource extends Resource
                                         <p class="text-gray-500 dark:text-gray-400">File video không tồn tại hoặc đã bị xóa.</p>
                                     </div>';
                                 }
-
-                                $videoUrl = url('/storage/youtube-videos/' . $filename);
                                 $filename = basename($record->video_file);
+                                $videoUrl = url('/storage/youtube-videos/' . $filename);
+
                                 $videoTypeClass = $record->video_type === 'short' ? 'max-width: 400px; max-height: 700px;' : 'max-height: 500px;';
                                 $videoTypeLabel = $record->video_type === 'short' ? '⚡ YouTube Shorts' : '🎬 Video Dài';
 
