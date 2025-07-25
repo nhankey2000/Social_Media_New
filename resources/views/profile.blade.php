@@ -113,6 +113,90 @@
             color: white;
         }
 
+        /* Header Title */
+        .header-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 32px;
+            letter-spacing: -0.02em;
+            background: linear-gradient(-45deg, #ffffff, #ffdd59, #ffd700, #32cd32, #00ff00, #228b22, #ff8c00, #ffffff);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeIn 1s ease-out 0.2s both, gradientText 6s ease infinite;
+            text-align: center;
+        }
+
+        /* Tab Menu Style */
+        .menu-section {
+            margin-bottom: 40px;
+            animation: fadeIn 1s ease-out 0.3s both;
+        }
+
+        .tab-menu {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 100%;
+            overflow-x: auto;
+        }
+
+        .tab-item {
+            padding: 12px 20px;
+            border-radius: 16px;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            white-space: nowrap;
+            min-width: fit-content;
+        }
+
+        .tab-item:hover {
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .tab-item.active {
+            background: rgba(255, 255, 255, 0.95);
+            color: #1f2937;
+            font-weight: 600;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .tab-item.active::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+            border-radius: 18px;
+            z-index: -1;
+            opacity: 0.7;
+            animation: borderGlow 2s linear infinite;
+        }
+
+        @keyframes borderGlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
         @keyframes fadeInUp {
             from {
                 opacity: 0;
@@ -125,8 +209,8 @@
         }
 
         .logo-section {
-            margin-bottom: 48px;
-            animation: fadeIn 1s ease-out 0.2s both;
+            margin-bottom: 32px;
+            animation: fadeIn 1s ease-out 0.4s both;
         }
 
         .logo {
@@ -162,7 +246,8 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            animation: fadeIn 1s ease-out 0.4s both, gradientText 6s ease infinite;
+            animation: fadeIn 1s ease-out 0.6s both, gradientText 6s ease infinite;
+            transition: all 0.5s ease;
         }
 
         @keyframes gradientText {
@@ -182,7 +267,7 @@
             color: white;
             margin-bottom: 48px;
             font-weight: 400;
-            animation: fadeIn 1s ease-out 0.6s both;
+            animation: fadeIn 1s ease-out 0.8s both;
         }
 
         @keyframes fadeIn {
@@ -352,6 +437,30 @@
                 margin-top: 20px;
             }
 
+            .tab-menu {
+                gap: 6px;
+                padding: 6px;
+                overflow-x: auto;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+
+            .tab-menu::-webkit-scrollbar {
+                display: none;
+            }
+
+            .tab-item {
+                padding: 10px 16px;
+                font-size: 0.85rem;
+                min-width: 120px;
+                text-align: center;
+            }
+
+            .header-title {
+                font-size: 2rem;
+                margin-bottom: 24px;
+            }
+
             .main-title {
                 font-size: 2.5rem;
                 margin-bottom: 12px;
@@ -387,6 +496,22 @@
         @media (max-width: 480px) {
             body {
                 padding: 30px 10px 20px;
+            }
+
+            .tab-menu {
+                gap: 4px;
+                padding: 4px;
+            }
+
+            .tab-item {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+                min-width: 100px;
+            }
+
+            .header-title {
+                font-size: 1.7rem;
+                margin-bottom: 20px;
             }
 
             .main-title {
@@ -436,16 +561,31 @@
 </head>
 <body>
 <div class="container">
+    <!-- Header Title -->
+    <h1 class="header-title">Hệ Sinh Thái Ông Đề</h1>
+
+    <!-- Tab Menu Section -->
+    <div class="menu-section">
+        <div class="tab-menu">
+            <button class="tab-item active" onclick="selectProject('ecosystem', this)">Du Lịch Sinh Thái</button>
+            <button class="tab-item" onclick="selectProject('zoo', this)">Zoo</button>
+            <button class="tab-item" onclick="selectProject('farm', this)">Farm</button>
+            <button class="tab-item" onclick="selectProject('waterpark', this)">Water Park</button>
+            <button class="tab-item" onclick="selectProject('restaurant', this)">Nhà Hàng</button>
+            <button class="tab-item" onclick="selectProject('banhxeo', this)">Bánh Xèo</button>
+        </div>
+    </div>
+
     <div class="logo-section">
         <div class="logo">
             <img src="{{ asset('images/logo.png') }}" alt="Logo Ông Đề">
         </div>
     </div>
 
-    <h1 class="main-title">Hệ Sinh Thái Ông Đề</h1>
-    <p class="subtitle">Kết nối và theo dõi Ông Đề trên tất cả các nền tảng</p>
+    <h2 class="main-title" id="mainTitle">Làng Du Lịch Sinh Thái Ông Đề</h2>
+    <p class="subtitle" id="subtitle">Kết nối và theo dõi Ông Đề trên tất cả các nền tảng</p>
 
-    <div class="social-grid">
+    <div class="social-grid" id="socialGrid">
         <a href="https://www.tiktok.com/@ongde2022" target="_blank" class="social-card tiktok">
             <div class="social-icon">
                 <img src="{{ asset('images/tiktok.png') }}" alt="TikTok">
@@ -485,5 +625,120 @@
         <p class="footer-text">Địa chỉ: 168 AB, Xuân Thuỷ, An Bình, Ninh Kiều, TPCT.</p>
     </div>
 </div>
+
+<script>
+    // Dữ liệu cho từng dự án
+    const projectData = {
+        ecosystem: {
+            title: "Hệ Sinh Thái Ông Đề",
+            subtitle: "Kết nối và theo dõi Ông Đề trên tất cả các nền tảng",
+            social: {
+                tiktok: "https://www.tiktok.com/@ongde2022",
+                facebook: "https://www.facebook.com/langdulichongde",
+                website: "https://ongde.vn",
+                zalo: "https://zalo.me/0782918222"
+            }
+        },
+        zoo: {
+            title: "Ông Đề Zoo",
+            subtitle: "Vườn thú sinh thái đầu tiên tại Cần Thơ",
+            social: {
+                tiktok: "https://www.tiktok.com/@ongdezoo",
+                facebook: "https://www.facebook.com/ongdezoo",
+                website: "https://zoo.ongde.vn",
+                zalo: "https://zalo.me/ongdezoo"
+            }
+        },
+        farm: {
+            title: "Ông Đề Farm",
+            subtitle: "Trang trại sinh thái xanh sạch",
+            social: {
+                tiktok: "https://www.tiktok.com/@ongdefarm",
+                facebook: "https://www.facebook.com/ongdefarm",
+                website: "https://ongde.vn",
+                zalo: "https://zalo.me/ongdefarm"
+            }
+        },
+        waterpark: {
+            title: "Ông Đề Water Park",
+            subtitle: "Công viên nước hiện đại và an toàn",
+            social: {
+                tiktok: "https://www.tiktok.com/@ongdewaterpark",
+                facebook: "https://www.facebook.com/ongdewaterpark",
+                website: "https://ongde.vn",
+                zalo: "https://zalo.me/ongdewaterpark"
+            }
+        },
+        restaurant: {
+            title: "Nhà Hàng Hồ Bơi",
+            subtitle: "Ẩm thực đặc sản miền Tây bên hồ bơi",
+            social: {
+                tiktok: "https://www.tiktok.com/@nhahanghoboiongde",
+                facebook: "https://www.facebook.com/nhahanghoppho",
+                website: "https://ongde.vn",
+                zalo: "https://zalo.me/nhahanghoboiongde"
+            }
+        },
+        banhxeo: {
+            title: "Bánh Xèo Cô Tư",
+            subtitle: "Bánh xèo truyền thống ngon nhất Cần Thơ",
+            social: {
+                tiktok: "https://www.tiktok.com/@banhxeocotu",
+                facebook: "https://www.facebook.com/profile.php?id=61578479400472",
+                website: "https://ongde.vn",
+                zalo: "https://zalo.me/banhxeocotu"
+            }
+        }
+    };
+
+    // Chọn dự án với tab menu
+    function selectProject(projectKey, tabElement) {
+        const data = projectData[projectKey];
+
+        // Cập nhật active state cho tabs
+        document.querySelectorAll('.tab-item').forEach(item => item.classList.remove('active'));
+        tabElement.classList.add('active');
+
+        // Cập nhật title và subtitle
+        document.getElementById('mainTitle').textContent = data.title;
+        document.getElementById('subtitle').textContent = data.subtitle;
+
+        // Cập nhật social links
+        const socialGrid = document.getElementById('socialGrid');
+        socialGrid.innerHTML = `
+                <a href="${data.social.tiktok}" target="_blank" class="social-card tiktok">
+                    <div class="social-icon">
+                        <img src="{{ asset('images/tiktok.png') }}" alt="TikTok">
+                    </div>
+                    <div class="social-title">TikTok</div>
+                    <div class="social-description">Video giải trí và thông tin</div>
+                </a>
+
+                <a href="${data.social.facebook}" target="_blank" class="social-card facebook">
+                    <div class="social-icon">
+                        <img src="{{ asset('images/facebook.png') }}" alt="Facebook">
+                    </div>
+                    <div class="social-title">Facebook</div>
+                    <div class="social-description">Cộng đồng và tin tức</div>
+                </a>
+
+                <a href="${data.social.website}" target="_blank" class="social-card website">
+                    <div class="social-icon">
+                        <img src="{{ asset('images/web.png') }}" alt="Website">
+                    </div>
+                    <div class="social-title">Website</div>
+                    <div class="social-description">Trang web chính thức</div>
+                </a>
+
+                <a href="${data.social.zalo}" target="_blank" class="social-card zalo">
+                    <div class="social-icon">
+                        <img src="{{ asset('images/zalo.png') }}" alt="Zalo">
+                    </div>
+                    <div class="social-title">Zalo</div>
+                    <div class="social-description">Chat và liên hệ trực tiếp</div>
+                </a>
+            `;
+    }
+</script>
 </body>
 </html>
