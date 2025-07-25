@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Làng Du Lịch Sinh Thái Ông Đề</title>
+    <title>Hệ Sinh Thái Ông Đề</title>
     <style>
         * {
             margin: 0;
@@ -25,7 +25,7 @@
             color: #1a1a1a;
             line-height: 1.6;
             position: relative;
-            overflow: hidden;
+            overflow-x: hidden;
         }
 
         /* Animated gradient background */
@@ -157,7 +157,7 @@
             font-weight: 800;
             margin-bottom: 16px;
             letter-spacing: -0.02em;
-            background: linear-gradient(-45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #ffeaa7, #dda0dd, #ff9a9e, #a8edea);
+            background: linear-gradient(-45deg, #ffffff, #ffdd59, #ffd700, #32cd32, #00ff00, #228b22, #ff8c00, #ffffff);
             background-size: 400% 400%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -223,7 +223,7 @@
             left: -100%;
             width: 100%;
             height: 2px;
-            background: linear-gradient(90deg, transparent, #6366f1, #8b5cf6, #ec4899, transparent);
+            background: linear-gradient(90deg, transparent, #1a1a1a, #2d3748, #4a5568, transparent);
             transition: left 0.8s ease;
         }
 
@@ -244,7 +244,7 @@
             left: 50%;
             width: 0;
             height: 0;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(26, 26, 26, 0.1) 0%, transparent 70%);
             border-radius: 50%;
             transform: translate(-50%, -50%);
             transition: all 0.6s ease;
@@ -255,7 +255,7 @@
         .social-card:hover::after {
             width: 200px;
             height: 200px;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(45, 55, 72, 0.05) 0%, transparent 70%);
         }
 
         .social-icon {
@@ -284,7 +284,7 @@
             right: -4px;
             bottom: -4px;
             border-radius: 16px;
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #ffeaa7, #dda0dd);
+            background: linear-gradient(45deg, #1a1a1a, #2d3748, #4a5568, #1a202c, #2a2a2a, #374151);
             background-size: 300% 300%;
             animation: rainbowRotate 3s linear infinite;
             opacity: 0;
@@ -342,8 +342,14 @@
 
         /* Mobile Responsive */
         @media (max-width: 768px) {
+            body {
+                justify-content: flex-start;
+                padding: 40px 16px 20px;
+            }
+
             .container {
-                padding: 0 16px;
+                padding: 0;
+                margin-top: 20px;
             }
 
             .main-title {
@@ -379,6 +385,10 @@
         }
 
         @media (max-width: 480px) {
+            body {
+                padding: 30px 10px 20px;
+            }
+
             .main-title {
                 font-size: 2rem;
             }
