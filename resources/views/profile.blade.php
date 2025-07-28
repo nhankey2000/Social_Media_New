@@ -124,14 +124,14 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            animation: fadeIn 1s ease-out 0.2s both, gradientText 6s ease infinite;
+            animation: fadeIn 1s ease-out 0.3s both, gradientText 6s ease infinite;
             text-align: center;
         }
 
         /* Tab Menu Style */
         .menu-section {
             margin-bottom: 40px;
-            animation: fadeIn 1s ease-out 0.3s both;
+            animation: fadeIn 1s ease-out 0.4s both;
         }
 
         .tab-menu {
@@ -191,6 +191,36 @@
             animation: borderGlow 2s linear infinite;
         }
 
+        /* Coming Soon Badge */
+        .coming-soon-badge {
+            position: absolute;
+            top: -8px;
+            right: -12px;
+            background: linear-gradient(45deg, #ff4757, #ff6b7a);
+            color: white;
+            font-size: 0.6rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+            animation: pulse-badge 2s ease-in-out infinite;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        @keyframes pulse-badge {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 6px 20px rgba(255, 71, 87, 0.6);
+            }
+        }
+
         @keyframes borderGlow {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
@@ -209,8 +239,8 @@
         }
 
         .logo-section {
-            margin-bottom: 32px;
-            animation: fadeIn 1s ease-out 0.4s both;
+            margin-bottom: 24px;
+            animation: fadeIn 1s ease-out 0.2s both;
         }
 
         .logo {
@@ -246,7 +276,7 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            animation: fadeIn 1s ease-out 0.6s both, gradientText 6s ease infinite;
+            animation: fadeIn 1s ease-out 0.4s both, gradientText 6s ease infinite;
             transition: all 0.5s ease;
         }
 
@@ -267,7 +297,7 @@
             color: white;
             margin-bottom: 48px;
             font-weight: 400;
-            animation: fadeIn 1s ease-out 0.8s both;
+            animation: fadeIn 1s ease-out 0.5s both;
         }
 
         @keyframes fadeIn {
@@ -456,6 +486,13 @@
                 text-align: center;
             }
 
+            .coming-soon-badge {
+                top: -6px;
+                right: -8px;
+                font-size: 0.55rem;
+                padding: 2px 6px;
+            }
+
             .header-title {
                 font-size: 2rem;
                 margin-bottom: 24px;
@@ -507,6 +544,13 @@
                 padding: 8px 12px;
                 font-size: 0.8rem;
                 min-width: 100px;
+            }
+
+            .coming-soon-badge {
+                top: -4px;
+                right: -6px;
+                font-size: 0.5rem;
+                padding: 1px 4px;
             }
 
             .header-title {
@@ -561,28 +605,38 @@
 </head>
 <body>
 <div class="container">
-    <!-- Header Title -->
-    <h1 class="header-title">Hệ Sinh Thái Ông Đề</h1>
-
-    <!-- Tab Menu Section -->
-    <div class="menu-section">
-        <div class="tab-menu">
-            <button class="tab-item active" onclick="selectProject('ecosystem', this)">Du Lịch Sinh Thái</button>
-            <button class="tab-item" onclick="selectProject('zoo', this)">Zoo</button>
-            <button class="tab-item" onclick="selectProject('farm', this)">Farm</button>
-            <button class="tab-item" onclick="selectProject('waterpark', this)">Water Park</button>
-            <button class="tab-item" onclick="selectProject('restaurant', this)">Nhà Hàng</button>
-            <button class="tab-item" onclick="selectProject('banhxeo', this)">Bánh Xèo</button>
-        </div>
-    </div>
-
+    <!-- Logo Section - Moved to top -->
     <div class="logo-section">
         <div class="logo">
             <img src="{{ asset('images/logo.png') }}" alt="Logo Ông Đề">
         </div>
     </div>
 
-    <h2 class="main-title" id="mainTitle">Làng Du Lịch Sinh Thái Ông Đề</h2>
+    <!-- Header Title -->
+    <h1 class="header-title" id="headerTitle">Hệ Sinh Thái Ông Đề</h1>
+
+    <!-- Tab Menu Section -->
+    <div class="menu-section">
+        <div class="tab-menu">
+            <button class="tab-item active" onclick="selectProject('ecosystem', this)">Du Lịch Sinh Thái</button>
+            <button class="tab-item" onclick="selectProject('zoo', this)">
+                Zoo
+                <span class="coming-soon-badge">Sắp khai trương</span>
+            </button>
+            <button class="tab-item" onclick="selectProject('farm', this)">
+                Farm
+                <span class="coming-soon-badge">Sắp khai trương</span>
+            </button>
+            <button class="tab-item" onclick="selectProject('waterpark', this)">
+                Water Park
+                <span class="coming-soon-badge">Sắp khai trương</span>
+            </button>
+            <button class="tab-item" onclick="selectProject('restaurant', this)">Nhà Hàng</button>
+            <button class="tab-item" onclick="selectProject('banhxeo', this)">Bánh Xèo</button>
+        </div>
+    </div>
+
+    <h2 class="main-title" id="mainTitle">Du Lịch Sinh Thái Ông Đề</h2>
     <p class="subtitle" id="subtitle">Kết nối và theo dõi Ông Đề trên tất cả các nền tảng</p>
 
     <div class="social-grid" id="socialGrid">
@@ -596,7 +650,7 @@
 
         <a href="https://www.facebook.com/langdulichongde" target="_blank" class="social-card facebook">
             <div class="social-icon">
-                <img src="{{ asset('images/facebook.png') }}" alt="Facebook">
+                <img src="{{ asset('images/facebook1.png') }}" alt="Facebook">
             </div>
             <div class="social-title">Facebook</div>
             <div class="social-description">Cộng đồng và tin tức</div>
@@ -612,7 +666,7 @@
 
         <a href="https://zalo.me/0782918222" target="_blank" class="social-card zalo">
             <div class="social-icon">
-                <img src="{{ asset('images/zalo.png') }}" alt="Zalo">
+                <img src="{{ asset('images/zalo1.png') }}" alt="Zalo">
             </div>
             <div class="social-title">Zalo</div>
             <div class="social-description">Chat và liên hệ trực tiếp</div>
@@ -630,7 +684,7 @@
     // Dữ liệu cho từng dự án
     const projectData = {
         ecosystem: {
-            title: "Hệ Sinh Thái Ông Đề",
+            title: "Du Lịch Sinh Thái Ông Đề",
             subtitle: "Kết nối và theo dõi Ông Đề trên tất cả các nền tảng",
             social: {
                 tiktok: "https://www.tiktok.com/@ongde2022",
@@ -645,8 +699,8 @@
             social: {
                 tiktok: "https://www.tiktok.com/@ongdezoo",
                 facebook: "https://www.facebook.com/ongdezoo",
-                website: "https://zoo.ongde.vn",
-                zalo: "https://zalo.me/ongdezoo"
+                website: "https://ongde.vn",
+                zalo: "https://zalo.me/0782918222"
             }
         },
         farm: {
@@ -656,7 +710,7 @@
                 tiktok: "https://www.tiktok.com/@ongdefarm",
                 facebook: "https://www.facebook.com/ongdefarm",
                 website: "https://ongde.vn",
-                zalo: "https://zalo.me/ongdefarm"
+                zalo: "https://zalo.me/0782918222"
             }
         },
         waterpark: {
@@ -666,27 +720,27 @@
                 tiktok: "https://www.tiktok.com/@ongdewaterpark",
                 facebook: "https://www.facebook.com/ongdewaterpark",
                 website: "https://ongde.vn",
-                zalo: "https://zalo.me/ongdewaterpark"
+                zalo: "https://zalo.me/0782918222"
             }
         },
         restaurant: {
             title: "Nhà Hàng Hồ Bơi",
             subtitle: "Ẩm thực đặc sản miền Tây bên hồ bơi",
             social: {
-                tiktok: "https://www.tiktok.com/@nhahanghoboiongde",
+                tiktok: "https://www.tiktok.com/@nhahanghoboihongphat.ct",
                 facebook: "https://www.facebook.com/nhahanghoppho",
-                website: "https://ongde.vn",
-                zalo: "https://zalo.me/nhahanghoboiongde"
+                website: "https://restaurant.ongde.vn",
+                zalo: "https://zalo.me/0901273222"
             }
         },
         banhxeo: {
             title: "Bánh Xèo Cô Tư",
             subtitle: "Bánh xèo truyền thống ngon nhất Cần Thơ",
             social: {
-                tiktok: "https://www.tiktok.com/@banhxeocotu",
-                facebook: "https://www.facebook.com/profile.php?id=61578479400472",
-                website: "https://ongde.vn",
-                zalo: "https://zalo.me/banhxeocotu"
+                tiktok: "https://www.tiktok.com/@banhxeoco4cantho",
+                facebook: "https://www.facebook.com/profile.php?id=61578479400472&locale=vi_VN",
+                website: "https://banhxeo.ongde.vn",
+                zalo: "https://zalo.me/0782918222"
             }
         }
     };
