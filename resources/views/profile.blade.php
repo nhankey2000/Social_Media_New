@@ -658,7 +658,7 @@
 
         <a href="https://ongde.vn" target="_blank" class="social-card website">
             <div class="social-icon">
-                <img src="{{ asset('images/web.png') }}" alt="Website">
+                <img src="{{ asset('images/web2.png') }}" alt="Website">
             </div>
             <div class="social-title">Website</div>
             <div class="social-description">Trang web chính thức</div>
