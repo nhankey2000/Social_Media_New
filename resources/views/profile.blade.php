@@ -632,7 +632,7 @@
                 <span class="coming-soon-badge">Sắp khai trương</span>
             </button>
             <button class="tab-item" onclick="selectProject('restaurant', this)">Nhà Hàng</button>
-            <button class="tab-item" onclick="selectProject('banhxeo', this)">Bánh Xèo</button>
+            <button class="tab-item" onclick="selectProject('banhxeo', this)">Bánh Xèo Cô Tư</button>
         </div>
     </div>
 
