@@ -194,17 +194,17 @@
         /* Coming Soon Badge */
         .coming-soon-badge {
             position: absolute;
-            top: -8px;
-            right: -12px;
+            top: -6px;
+            right: -8px;
             background: linear-gradient(45deg, #ff4757, #ff6b7a);
             color: white;
-            font-size: 0.6rem;
+            font-size: 0.5rem;
             font-weight: 700;
-            padding: 3px 8px;
-            border-radius: 12px;
+            padding: 2px 6px;
+            border-radius: 10px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+            letter-spacing: 0.3px;
+            box-shadow: 0 2px 8px rgba(255, 71, 87, 0.4);
             animation: pulse-badge 2s ease-in-out infinite;
             z-index: 10;
             white-space: nowrap;
@@ -487,10 +487,10 @@
             }
 
             .coming-soon-badge {
-                top: -6px;
-                right: -8px;
-                font-size: 0.55rem;
-                padding: 2px 6px;
+                top: -4px;
+                right: -6px;
+                font-size: 0.45rem;
+                padding: 1px 4px;
             }
 
             .header-title {
@@ -547,10 +547,10 @@
             }
 
             .coming-soon-badge {
-                top: -4px;
-                right: -6px;
-                font-size: 0.5rem;
-                padding: 1px 4px;
+                top: -3px;
+                right: -4px;
+                font-size: 0.4rem;
+                padding: 1px 3px;
             }
 
             .header-title {
@@ -675,8 +675,9 @@
 
     <div class="footer">
         <p class="footer-text">© 2025 Làng Du Lịch Sinh Thái Ông Đề. Tất cả quyền được bảo lưu.</p>
-        <p class="footer-text">CTY TNHH Làng Du Lịch Sinh Thái Ông Đề.</p>
+        <p class="footer-text">Công Ty TNHH Làng Du Lịch Sinh Thái Ông Đề.</p>
         <p class="footer-text">Địa chỉ: 168 AB, Xuân Thuỷ, An Bình, Ninh Kiều, TPCT.</p>
+        <p class="footer-text">Hotline: 0931 852 113.</p>
     </div>
 </div>
 
@@ -757,7 +758,7 @@
         document.getElementById('mainTitle').textContent = data.title;
         document.getElementById('subtitle').textContent = data.subtitle;
 
-        // Cập nhật social links
+        // Cập nhật social links - Đã đồng bộ đường dẫn ảnh với phần hiển thị ban đầu
         const socialGrid = document.getElementById('socialGrid');
         socialGrid.innerHTML = `
                 <a href="${data.social.tiktok}" target="_blank" class="social-card tiktok">
@@ -770,7 +771,7 @@
 
                 <a href="${data.social.facebook}" target="_blank" class="social-card facebook">
                     <div class="social-icon">
-                        <img src="{{ asset('images/facebook.png') }}" alt="Facebook">
+                        <img src="{{ asset('images/facebook1.png') }}" alt="Facebook">
                     </div>
                     <div class="social-title">Facebook</div>
                     <div class="social-description">Cộng đồng và tin tức</div>
@@ -778,7 +779,7 @@
 
                 <a href="${data.social.website}" target="_blank" class="social-card website">
                     <div class="social-icon">
-                        <img src="{{ asset('images/web.png') }}" alt="Website">
+                        <img src="{{ asset('images/web2.png') }}" alt="Website">
                     </div>
                     <div class="social-title">Website</div>
                     <div class="social-description">Trang web chính thức</div>
@@ -786,7 +787,7 @@
 
                 <a href="${data.social.zalo}" target="_blank" class="social-card zalo">
                     <div class="social-icon">
-                        <img src="{{ asset('images/zalo.png') }}" alt="Zalo">
+                        <img src="{{ asset('images/zalo1.png') }}" alt="Zalo">
                     </div>
                     <div class="social-title">Zalo</div>
                     <div class="social-description">Chat và liên hệ trực tiếp</div>
