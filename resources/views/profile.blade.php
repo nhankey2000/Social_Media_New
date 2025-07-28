@@ -676,7 +676,8 @@
     <div class="footer">
         <p class="footer-text">© 2025 Làng Du Lịch Sinh Thái Ông Đề. Tất cả quyền được bảo lưu.</p>
         <p class="footer-text">Công Ty TNHH Làng Du Lịch Sinh Thái Ông Đề.</p>
-        <p class="footer-text">Địa chỉ: 168 AB, Xuân Thuỷ, An Bình, Ninh Kiều, TPCT.</p>
+        <p class="footer-text">Địa chỉ: Số 168-AB1,  Đường Xuân Thuỷ, Khu Dân Cư Hồng Phát, Phường An Bình, Thành Phố Cần Thơ, Việt Nam.</p>
+        <p class="footer-text">Mã Số Thuế: 1801218923.</p>
         <p class="footer-text">Hotline: 0931 852 113.</p>
     </div>
 </div>
