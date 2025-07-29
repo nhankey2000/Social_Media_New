@@ -28,20 +28,12 @@
             overflow-x: hidden;
         }
 
-        /* Animated gradient background */
         @keyframes gradientShift {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
-            }
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
-        /* Floating particles */
         body::before {
             content: '';
             position: absolute;
@@ -60,21 +52,11 @@
         }
 
         @keyframes floatParticles {
-            0%, 100% {
-                transform: translateY(0px) rotate(0deg) scale(1);
-                opacity: 0.7;
-            }
-            33% {
-                transform: translateY(-20px) rotate(120deg) scale(1.1);
-                opacity: 1;
-            }
-            66% {
-                transform: translateY(10px) rotate(240deg) scale(0.9);
-                opacity: 0.8;
-            }
+            0%, 100% { transform: translateY(0px) rotate(0deg) scale(1); opacity: 0.7; }
+            33% { transform: translateY(-20px) rotate(120deg) scale(1.1); opacity: 1; }
+            66% { transform: translateY(10px) rotate(240deg) scale(0.9); opacity: 0.8; }
         }
 
-        /* Pulsing glow effect */
         body::after {
             content: '';
             position: absolute;
@@ -90,14 +72,8 @@
         }
 
         @keyframes pulse {
-            0%, 100% {
-                transform: translate(-50%, -50%) scale(1);
-                opacity: 0.5;
-            }
-            50% {
-                transform: translate(-50%, -50%) scale(2);
-                opacity: 0.2;
-            }
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+            50% { transform: translate(-50%, -50%) scale(2); opacity: 0.2; }
         }
 
         .container {
@@ -113,7 +89,6 @@
             color: white;
         }
 
-        /* Header Title */
         .header-title {
             font-size: 2.5rem;
             font-weight: 800;
@@ -128,7 +103,6 @@
             text-align: center;
         }
 
-        /* Tab Menu Style */
         .menu-section {
             margin-bottom: 40px;
             animation: fadeIn 1s ease-out 0.4s both;
@@ -198,14 +172,8 @@
         }
 
         @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(40px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .logo-section {
@@ -251,15 +219,9 @@
         }
 
         @keyframes gradientText {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
-            }
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         .subtitle {
@@ -346,7 +308,6 @@
             background: radial-gradient(circle, rgba(45, 55, 72, 0.05) 0%, transparent 70%);
         }
 
-        /* Card Header with Rectangular Image */
         .card-header {
             width: 100%;
             height: 120px;
@@ -366,7 +327,6 @@
             transform: scale(1.1);
         }
 
-        /* Card Content */
         .card-content {
             padding: 20px;
             text-align: left;
@@ -387,7 +347,6 @@
             line-height: 1.5;
         }
 
-        /* Expandable Content */
         .expandable-content {
             max-height: 0;
             overflow: hidden;
@@ -410,7 +369,6 @@
             text-align: justify;
         }
 
-        /* Expand/Collapse Icon */
         .expand-icon {
             position: absolute;
             bottom: 15px;
@@ -454,7 +412,6 @@
             color: white;
         }
 
-        /* Mobile Responsive */
         @media (max-width: 768px) {
             body {
                 justify-content: flex-start;
@@ -574,7 +531,6 @@
             }
         }
 
-        /* Touch devices optimization */
         @media (hover: none) and (pointer: coarse) {
             .social-card:hover {
                 transform: none;
@@ -588,25 +544,29 @@
 </head>
 <body>
 <div class="container">
-    <!-- Logo Section -->
     <div class="logo-section">
         <div class="logo">
             <img src="{{ asset('images/logo.png') }}" alt="Logo Ông Đề">
         </div>
     </div>
 
-    <!-- Header Title -->
     <h1 class="header-title" id="headerTitle">Hướng Dẫn Chăm Sóc Thú Vườn Thú</h1>
 
-    <!-- Tab Menu Section -->
     <div class="menu-section">
         <div class="tab-menu">
             <button class="tab-item active" onclick="selectAnimal('cuu', this)">Cừu</button>
-            <button class="tab-item" onclick="selectAnimal('nai', this)">Nai</button>
+{{--            <button class="tab-item" onclick="selectAnimal('nai', this)">Nai</button>--}}
             <button class="tab-item" onclick="selectAnimal('tho', this)">Thỏ</button>
-            <button class="tab-item" onclick="selectAnimal('casau', this)">Cá Sấu</button>
+{{--            <button class="tab-item" onclick="selectAnimal('casau', this)">Cá Sấu</button>--}}
             <button class="tab-item" onclick="selectAnimal('dadieu', this)">Đà Điều</button>
             <button class="tab-item" onclick="selectAnimal('cong', this)">Công</button>
+            <button class="tab-item" onclick="selectAnimal('chim', this)">Chim</button>
+            <button class="tab-item" onclick="selectAnimal('ga', this)">Gà</button>
+            <button class="tab-item" onclick="selectAnimal('de', this)">Dê</button>
+            <button class="tab-item" onclick="selectAnimal('bo', this)">Bò</button>
+            <button class="tab-item" onclick="selectAnimal('trau', this)">Trâu</button>
+            <button class="tab-item" onclick="selectAnimal('huou', this)">Hươu</button>
+            <button class="tab-item" onclick="selectAnimal('heotoc', this)">Heo Tộc</button>
         </div>
     </div>
 
@@ -702,19 +662,17 @@
     <div class="footer">
         <p class="footer-text">© 2025 Làng Du Lịch Sinh Thái Ông Đề. Tất cả quyền được bảo lưu.</p>
         <p class="footer-text">Công Ty TNHH Làng Du Lịch Sinh Thái Ông Đề.</p>
-        <p class="footer-text">Địa chỉ: Số 168-AB1,  Đường Xuân Thuỷ, Khu Dân Cư Hồng Phát, Phường An Bình, Thành Phố Cần Thơ, Việt Nam.</p>
+        <p class="footer-text">Địa chỉ: Số 168-AB1, Đường Xuân Thuỷ, Khu Dân Cư Hồng Phát, Phường An Bình, Thành Phố Cần Thơ, Việt Nam.</p>
         <p class="footer-text">Mã Số Thuế: 1801218923.</p>
         <p class="footer-text">Hotline: 0931 852 113.</p>
     </div>
 </div>
 
 <script>
-    // Function để toggle mở rộng card
     function toggleCard(cardElement) {
         const expandableContent = cardElement.querySelector('.expandable-content');
         const isExpanded = cardElement.classList.contains('expanded');
 
-        // Đóng tất cả cards khác
         document.querySelectorAll('.social-card.expanded').forEach(card => {
             if (card !== cardElement) {
                 card.classList.remove('expanded');
@@ -722,7 +680,6 @@
             }
         });
 
-        // Toggle card hiện tại
         if (isExpanded) {
             cardElement.classList.remove('expanded');
             expandableContent.classList.remove('expanded');
@@ -732,7 +689,6 @@
         }
     }
 
-    // Dữ liệu cho từng loại thú
     const animalData = {
         cuu: {
             title: "Hướng Dẫn Chăm Sóc Cừu",
@@ -776,48 +732,48 @@
                 }
             ]
         },
-        nai: {
-            title: "Hướng Dẫn Chăm Sóc Nai",
-            subtitle: "Kiến thức chăm sóc nai trong vườn thú",
-            guides: [
-                {
-                    icon: "chamnai.png",
-                    title: "Chăm Sóc",
-                    shortDesc: "Quy trình chăm sóc hàng ngày cho nai",
-                    fullDesc: "Tránh tiếng ồn, chuyển động đột ngột. Kiểm tra sức khỏe thường xuyên. Vệ sinh chuồng hàng ngày, thay nước sạch. Quan sát hành vi để phát hiện sớm bệnh tật."
-                },
-                {
-                    icon: "tiemvaccinnai.png",
-                    title: "Tiêm Vacxin",
-                    shortDesc: "Lịch tiêm phòng bảo vệ nai",
-                    fullDesc: "Tiêm vacxin phòng bệnh lở mồm long móng và viêm phổi vào đầu và cuối mùa mưa. Tiêm vacxin dại khi có dịch. Tham khảo ý kiến bác sĩ thú y để đảm bảo liều lượng."
-                },
-                {
-                    icon: "benhthuonggapnai.png",
-                    title: "Bệnh Thường Gặp",
-                    shortDesc: "Các bệnh phổ biến ở nai",
-                    fullDesc: "Lở mồm long móng: sốt, lở loét miệng. Viêm phổi: ho, khó thở. Ký sinh trùng: gầy yếu, rụng lông. Điều trị bằng thuốc theo chỉ định và vệ sinh môi trường."
-                },
-                {
-                    icon: "thucanai.png",
-                    title: "Dinh Dưỡng",
-                    shortDesc: "Chế độ ăn và bổ sung dinh dưỡng",
-                    fullDesc: "Ăn cỏ, lá cây, rau củ, trái cây như táo. Bổ sung thức ăn viên chuyên dụng. Cần nước sạch liên tục, chia nhỏ bữa ăn trong ngày để tránh đầy hơi."
-                },
-                {
-                    icon: "sinhsannai.png",
-                    title: "Sinh Sản",
-                    shortDesc: "Quy trình sinh sản và chăm sóc nai con",
-                    fullDesc: "Nai cái mang thai 240-250 ngày, đẻ 1 con/lứa. Nai đực phối giống từ 2 tuổi. Sau đẻ, giữ nai mẹ và con trong khu vực yên tĩnh, cung cấp thức ăn giàu năng lượng."
-                },
-                {
-                    icon: "lichtheodoinai.png",
-                    title: "Lịch Theo Dõi",
-                    shortDesc: "Lịch trình chăm sóc định kỳ",
-                    fullDesc: "Tháng 2, 8: tiêm vacxin. Hàng tuần: kiểm tra chân và móng. Hàng tháng: tẩy giun, bổ sung vitamin. Mùa khô: tăng cường nước uống."
-                }
-            ]
-        },
+        // nai: {
+        //     title: "Hướng Dẫn Chăm Sóc Nai",
+        //     subtitle: "Kiến thức chăm sóc nai trong vườn thú",
+        //     guides: [
+        //         {
+        //             icon: "chamnai.png",
+        //             title: "Chăm Sóc",
+        //             shortDesc: "Quy trình chăm sóc hàng ngày cho nai",
+        //             fullDesc: "Tránh tiếng ồn, chuyển động đột ngột. Kiểm tra sức khỏe thường xuyên. Vệ sinh chuồng hàng ngày, thay nước sạch. Quan sát hành vi để phát hiện sớm bệnh tật."
+        //         },
+        //         {
+        //             icon: "vaccin.png",
+        //             title: "Tiêm Vacxin",
+        //             shortDesc: "Lịch tiêm phòng bảo vệ nai",
+        //             fullDesc: "Tiêm vacxin phòng bệnh lở mồm long móng và viêm phổi vào đầu và cuối mùa mưa. Tiêm vacxin dại khi có dịch. Tham khảo ý kiến bác sĩ thú y để đảm bảo liều lượng."
+        //         },
+        //         {
+        //             icon: "benhthuonggapnai.png",
+        //             title: "Bệnh Thường Gặp",
+        //             shortDesc: "Các bệnh phổ biến ở nai",
+        //             fullDesc: "Lở mồm long móng: sốt, lở loét miệng. Viêm phổi: ho, khó thở. Ký sinh trùng: gầy yếu, rụng lông. Điều trị bằng thuốc theo chỉ định và vệ sinh môi trường."
+        //         },
+        //         {
+        //             icon: "thucanai.png",
+        //             title: "Dinh Dưỡng",
+        //             shortDesc: "Chế độ ăn và bổ sung dinh dưỡng",
+        //             fullDesc: "Ăn cỏ, lá cây, rau củ, trái cây như táo. Bổ sung thức ăn viên chuyên dụng. Cần nước sạch liên tục, chia nhỏ bữa ăn trong ngày để tránh đầy hơi."
+        //         },
+        //         {
+        //             icon: "sinhsannai.png",
+        //             title: "Sinh Sản",
+        //             shortDesc: "Quy trình sinh sản và chăm sóc nai con",
+        //             fullDesc: "Nai cái mang thai 240-250 ngày, đẻ 1 con/lứa. Nai đực phối giống từ 2 tuổi. Sau đẻ, giữ nai mẹ và con trong khu vực yên tĩnh, cung cấp thức ăn giàu năng lượng."
+        //         },
+        //         {
+        //             icon: "lich.png",
+        //             title: "Lịch Theo Dõi",
+        //             shortDesc: "Lịch trình chăm sóc định kỳ",
+        //             fullDesc: "Tháng 2, 8: tiêm vacxin. Hàng tuần: kiểm tra chân và móng. Hàng tháng: tẩy giun, bổ sung vitamin. Mùa khô: tăng cường nước uống."
+        //         }
+        //     ]
+        // },
         tho: {
             title: "Hướng Dẫn Chăm Sóc Thỏ",
             subtitle: "Chăm sóc thỏ cảnh và thỏ giống hiệu quả",
@@ -829,19 +785,19 @@
                     fullDesc: "Vệ sinh chuồng hàng ngày, tắm rửa định kỳ khi cần. Cắt móng thường xuyên, chải lông để tránh rụng lông quá nhiều. Kiểm tra sức khỏe đều đặn, đặc biệt sau sinh."
                 },
                 {
-                    icon: "tiemvaccintho.png",
+                    icon: "tiemvaccin.png",
                     title: "Tiêm Vacxin",
                     shortDesc: "Lịch tiêm phòng bảo vệ thỏ",
                     fullDesc: "Tiêm vacxin phòng bệnh dại và myxomatosis từ 6-8 tuần tuổi, nhắc lại mỗi 6 tháng. Sử dụng vacxin phù hợp với giống thỏ, tiêm bởi bác sĩ thú y."
                 },
                 {
-                    icon: "benhthuonggaptho.png",
+                    icon: "tho.png",
                     title: "Bệnh Thường Gặp",
                     shortDesc: "Các bệnh phổ biến ở thỏ",
                     fullDesc: "Myxomatosis: sưng mắt, tai. Tiêu chảy: do thức ăn không sạch. Rụng lông: stress hoặc ký sinh trùng. Điều trị sớm với thuốc chuyên dụng."
                 },
                 {
-                    icon: "dinhduongtho.png",
+                    icon: "ddtho.png",
                     title: "Dinh Dưỡng",
                     shortDesc: "Chế độ ăn và bổ sung dinh dưỡng",
                     fullDesc: "Cỏ khô, rau xanh như xà lách, cà rốt. Tránh rau có độ ẩm cao như cải xanh. Nước sạch luôn có sẵn, bổ sung thức ăn viên chuyên dụng."
@@ -853,55 +809,55 @@
                     fullDesc: "Thỏ cái mang thai 30-32 ngày, đẻ 4-8 con/lứa. Thỏ đực phối từ 5-6 tháng tuổi. Sau đẻ, giữ khu vực sạch sẽ, cung cấp thức ăn giàu canxi."
                 },
                 {
-                    icon: "lichtheodoitho.png",
+                    icon: "lich.png",
                     title: "Lịch Theo Dõi",
                     shortDesc: "Lịch trình chăm sóc định kỳ",
                     fullDesc: "Tháng 1, 7: tiêm vacxin. Hàng tuần: kiểm tra răng và móng. Hàng tháng: tẩy giun, bổ sung vitamin C. Mùa hè: tăng cường nước mát."
                 }
             ]
         },
-        casau: {
-            title: "Hướng Dẫn Chăm Sóc Cá Sấu",
-            subtitle: "An toàn và hiệu quả trong chăm sóc cá sấu",
-            guides: [
-                {
-                    icon: "chamcasau.png",
-                    title: "Chăm Sóc",
-                    shortDesc: "Quy trình chăm sóc an toàn cho cá sấu",
-                    fullDesc: "Kiểm tra sức khỏe từ xa, quan sát hành vi hàng ngày. Vệ sinh môi trường nước thường xuyên, thay nước định kỳ. Theo dõi nhiệt độ và chất lượng nước để đảm bảo ổn định."
-                },
-                {
-                    icon: "tiemvaccincasau.png",
-                    title: "Tiêm Vacxin",
-                    shortDesc: "Lịch tiêm phòng bảo vệ cá sấu",
-                    fullDesc: "Tiêm vacxin phòng bệnh viêm da và nhiễm trùng da vào đầu mùa xuân. Tiêm nhắc lại hàng năm, ưu tiên cá sấu non. Tham khảo chuyên gia thủy sản."
-                },
-                {
-                    icon: "benhthuonggapcasau.png",
-                    title: "Bệnh Thường Gặp",
-                    shortDesc: "Các bệnh phổ biến ở cá sấu",
-                    fullDesc: "Viêm da: da sần sùi, đỏ. Nhiễm trùng nước: lơ lửng, yếu. Ký sinh trùng: gầy yếu, chậm lớn. Điều trị bằng thuốc chuyên dụng và cải thiện môi trường nước."
-                },
-                {
-                    icon: "thucancasau.png",
-                    title: "Dinh Dưỡng",
-                    shortDesc: "Chế độ dinh dưỡng cho cá sấu",
-                    fullDesc: "Cá tươi, thịt gia cầm, thịt bò. Cho ăn 2-3 lần/tuần, lượng 5-10% trọng lượng cơ thể. Tránh thức ăn ôi thiu, sử dụng que dài khi cho ăn."
-                },
-                {
-                    icon: "sinhsancasau.png",
-                    title: "Sinh Sản",
-                    shortDesc: "Quy trình sinh sản và chăm sóc cá sấu con",
-                    fullDesc: "Cá sấu cái đẻ 20-60 trứng sau 30-40 ngày, ấp 60-90 ngày. Sau nở, giữ cá con trong nước ấm 28-30°C, cung cấp thức ăn nhỏ như cá con."
-                },
-                {
-                    icon: "lichtheodoicasau.png",
-                    title: "Lịch Theo Dõi",
-                    shortDesc: "Lịch trình chăm sóc định kỳ",
-                    fullDesc: "Tháng 3, 9: kiểm tra sức khỏe. Hàng tuần: vệ sinh hồ nước. Hàng tháng: đo nhiệt độ, bổ sung khoáng. Mùa mưa: kiểm tra hệ thống thoát nước."
-                }
-            ]
-        },
+        // casau: {
+        //     title: "Hướng Dẫn Chăm Sóc Cá Sấu",
+        //     subtitle: "An toàn và hiệu quả trong chăm sóc cá sấu",
+        //     guides: [
+        //         {
+        //             icon: "chamcasau.png",
+        //             title: "Chăm Sóc",
+        //             shortDesc: "Quy trình chăm sóc an toàn cho cá sấu",
+        //             fullDesc: "Kiểm tra sức khỏe từ xa, quan sát hành vi hàng ngày. Vệ sinh môi trường nước thường xuyên, thay nước định kỳ. Theo dõi nhiệt độ và chất lượng nước để đảm bảo ổn định."
+        //         },
+        //         {
+        //             icon: "vaccin.png",
+        //             title: "Tiêm Vacxin",
+        //             shortDesc: "Lịch tiêm phòng bảo vệ cá sấu",
+        //             fullDesc: "Tiêm vacxin phòng bệnh viêm da và nhiễm trùng da vào đầu mùa xuân. Tiêm nhắc lại hàng năm, ưu tiên cá sấu non. Tham khảo chuyên gia thủy sản."
+        //         },
+        //         {
+        //             icon: "benhthuonggapcasau.png",
+        //             title: "Bệnh Thường Gặp",
+        //             shortDesc: "Các bệnh phổ biến ở cá sấu",
+        //             fullDesc: "Viêm da: da sần sùi, đỏ. Nhiễm trùng nước: lơ lửng, yếu. Ký sinh trùng: gầy yếu, chậm lớn. Điều trị bằng thuốc chuyên dụng và cải thiện môi trường nước."
+        //         },
+        //         {
+        //             icon: "thucancasau.png",
+        //             title: "Dinh Dưỡng",
+        //             shortDesc: "Chế độ dinh dưỡng cho cá sấu",
+        //             fullDesc: "Cá tươi, thịt gia cầm, thịt bò. Cho ăn 2-3 lần/tuần, lượng 5-10% trọng lượng cơ thể. Tránh thức ăn ôi thiu, sử dụng que dài khi cho ăn."
+        //         },
+        //         {
+        //             icon: "sinhsancasau.png",
+        //             title: "Sinh Sản",
+        //             shortDesc: "Quy trình sinh sản và chăm sóc cá sấu con",
+        //             fullDesc: "Cá sấu cái đẻ 20-60 trứng sau 30-40 ngày, ấp 60-90 ngày. Sau nở, giữ cá con trong nước ấm 28-30°C, cung cấp thức ăn nhỏ như cá con."
+        //         },
+        //         {
+        //             icon: "lich.png",
+        //             title: "Lịch Theo Dõi",
+        //             shortDesc: "Lịch trình chăm sóc định kỳ",
+        //             fullDesc: "Tháng 3, 9: kiểm tra sức khỏe. Hàng tuần: vệ sinh hồ nước. Hàng tháng: đo nhiệt độ, bổ sung khoáng. Mùa mưa: kiểm tra hệ thống thoát nước."
+        //         }
+        //     ]
+        // },
         dadieu: {
             title: "Hướng Dẫn Chăm Sóc Đà Điều",
             subtitle: "Chăm sóc đà điều trong môi trường nuôi nhốt",
@@ -913,7 +869,7 @@
                     fullDesc: "Tránh stress, tiếng ồn lớn. Kiểm tra chân thường xuyên vì dễ bị thương. Vệ sinh khu vực sống hàng ngày. Quan sát hành vi sinh sản để hỗ trợ kịp thời."
                 },
                 {
-                    icon: "tiemvaccindadieu.png",
+                    icon: "tiemvaccin.png",
                     title: "Tiêm Vacxin",
                     shortDesc: "Lịch tiêm phòng bảo vệ đà điều",
                     fullDesc: "Tiêm vacxin phòng bệnh Newcastle và cúm gia cầm vào đầu và cuối mùa khô. Tiêm nhắc lại mỗi năm, ưu tiên chim non. Tham khảo bác sĩ thú y."
@@ -937,7 +893,7 @@
                     fullDesc: "Đà điều đẻ 8-15 trứng/lứa, ấp 40-50 ngày. Sau nở, giữ khu vực ấm áp, cung cấp thức ăn mềm như cám trộn rau. Tách chim con khỏi chim lớn."
                 },
                 {
-                    icon: "lichtheodoidadieu.png",
+                    icon: "lich.png",
                     title: "Lịch Theo Dõi",
                     shortDesc: "Lịch trình chăm sóc định kỳ",
                     fullDesc: "Tháng 4, 10: tiêm vacxin. Hàng tuần: kiểm tra chân. Hàng tháng: tẩy giun, bổ sung vitamin. Mùa hè: tăng bóng mát."
@@ -955,7 +911,7 @@
                     fullDesc: "Vệ sinh chuồng hàng ngày, thay cát lót. Kiểm tra sức khỏe thường xuyên. Tạo môi trường yên tĩnh cho sinh sản. Cắt móng định kỳ để tránh nhiễm trùng."
                 },
                 {
-                    icon: "tiemvaccincong.png",
+                    icon: "tiemvaccin.png",
                     title: "Tiêm Vacxin",
                     shortDesc: "Lịch tiêm phòng bảo vệ công",
                     fullDesc: "Tiêm vacxin phòng bệnh Newcastle và đậu gà vào tháng 2 và tháng 8. Tiêm nhắc lại mỗi 6 tháng, ưu tiên công con. Tham khảo bác sĩ thú y."
@@ -979,34 +935,323 @@
                     fullDesc: "Công mái đẻ 4-8 trứng/lứa, ấp 28-30 ngày. Sau nở, giữ công con trong khu vực ấm áp, cung cấp thức ăn mềm như cám trộn ngô."
                 },
                 {
-                    icon: "lichtheodoicong.png",
+                    icon: "lich.png",
                     title: "Lịch Theo Dõi",
                     shortDesc: "Lịch trình chăm sóc định kỳ",
                     fullDesc: "Tháng 3, 9: tiêm vacxin. Hàng tuần: kiểm tra lông và móng. Hàng tháng: tẩy giun, bổ sung canxi. Mùa đông: tăng nhiệt độ chuồng."
                 }
             ]
+        },
+        chim: {
+            title: "Hướng Dẫn Chăm Sóc Chim",
+            subtitle: "Chăm sóc các loài chim cảnh và chim nuôi",
+            guides: [
+                {
+                    icon: "chamchim.png",
+                    title: "Chăm Sóc",
+                    shortDesc: "Quy trình chăm sóc hàng ngày cho chim",
+                    fullDesc: "Vệ sinh lồng hàng ngày, thay nước sạch. Cung cấp cành cây để chim đậu. Tránh tiếng ồn lớn và ánh sáng mạnh. Kiểm tra sức khỏe định kỳ, đặc biệt là lông và mắt."
+                },
+                {
+                    icon: "tiemvaccin.png",
+                    title: "Tiêm Vacxin",
+                    shortDesc: "Lịch tiêm phòng bảo vệ chim",
+                    fullDesc: "Tiêm vacxin phòng bệnh Newcastle và cúm gia cầm vào tháng 3 và 9. Tiêm nhắc lại mỗi 6 tháng, ưu tiên chim non. Tham khảo bác sĩ thú y để đảm bảo liều lượng."
+                },
+                {
+                    icon: "benhthuonggapchim.png",
+                    title: "Bệnh Thường Gặp",
+                    shortDesc: "Các bệnh phổ biến ở chim",
+                    fullDesc: "Cúm gia cầm: sốt, lông xù. Ký sinh trùng: rụng lông, gầy yếu. Nhiễm trùng hô hấp: hắt hơi, khó thở. Điều trị bằng thuốc và cải thiện môi trường sống."
+                },
+                {
+                    icon: "thucanchim.png",
+                    title: "Dinh Dưỡng",
+                    shortDesc: "Chế độ dinh dưỡng cho chim",
+                    fullDesc: "Hạt ngũ cốc, trái cây, rau xanh. Bổ sung cát sỏi để hỗ trợ tiêu hóa. Nước sạch luôn có sẵn, tránh thức ăn mốc. Cho ăn 2-3 lần/ngày."
+                },
+                {
+                    icon: "sinhsanchim.png",
+                    title: "Sinh Sản",
+                    shortDesc: "Quy trình sinh sản và chăm sóc chim con",
+                    fullDesc: "Chim mái đẻ 3-6 trứng/lứa, ấp 14-21 ngày. Sau nở, giữ khu vực ấm áp, cung cấp thức ăn mềm như cám trộn. Tách chim con khi đủ lông."
+                },
+                {
+                    icon: "lich.png",
+                    title: "Lịch Theo Dõi",
+                    shortDesc: "Lịch trình chăm sóc định kỳ",
+                    fullDesc: "Tháng 2, 8: tiêm vacxin. Hàng tuần: kiểm tra lông và mắt. Hàng tháng: tẩy giun, bổ sung vitamin. Mùa đông: tăng nhiệt độ lồng."
+                }
+            ]
+        },
+        ga: {
+            title: "Hướng Dẫn Chăm Sóc Gà",
+            subtitle: "Chăm sóc gà hiệu quả trong trang trại",
+            guides: [
+                {
+                    icon: "chamga.png",
+                    title: "Chăm Sóc",
+                    shortDesc: "Quy trình chăm sóc hàng ngày cho gà",
+                    fullDesc: "Vệ sinh chuồng trại hàng ngày, thay nước sạch. Cung cấp không gian đủ rộng để gà di chuyển. Kiểm tra sức khỏe định kỳ, đặc biệt là mào và chân."
+                },
+                {
+                    icon: "tiemvaccin.png",
+                    title: "Tiêm Vacxin",
+                    shortDesc: "Lịch tiêm phòng bảo vệ gà",
+                    fullDesc: "Tiêm vacxin phòng bệnh Newcastle, Gumboro và cúm gia cầm từ 1-2 tuần tuổi, nhắc lại mỗi 6 tháng. Sử dụng vacxin chất lượng cao, theo chỉ dẫn bác sĩ thú y."
+                },
+                {
+                    icon: "benhthuonggapga.png",
+                    title: "Bệnh Thường Gặp",
+                    shortDesc: "Các bệnh phổ biến ở gà",
+                    fullDesc: "Newcastle: khó thở, tiêu chảy. Gumboro: suy giảm miễn dịch. Cúm gia cầm: sốt, giảm đẻ. Điều trị bằng thuốc và vệ sinh chuồng trại kỹ lưỡng."
+                },
+                {
+                    icon: "thucanga.png",
+                    title: "Dinh Dưỡng",
+                    shortDesc: "Chế độ dinh dưỡng cho gà",
+                    fullDesc: "Cám gà, ngô, thóc, rau xanh. Bổ sung canxi và protein trong giai đoạn đẻ trứng. Nước sạch liên tục, tránh thức ăn ôi thiu. Cho ăn 2-3 lần/ngày."
+                },
+                {
+                    icon: "sinhsanga.png",
+                    title: "Sinh Sản",
+                    shortDesc: "Quy trình sinh sản và chăm sóc gà con",
+                    fullDesc: "Gà mái đẻ 10-20 trứng/lứa, ấp 21 ngày. Sau nở, giữ gà con trong khu vực ấm 32-35°C, cung cấp cám khởi đầu giàu protein."
+                },
+                {
+                    icon: "lich.png",
+                    title: "Lịch Theo Dõi",
+                    shortDesc: "Lịch trình chăm sóc định kỳ",
+                    fullDesc: "Tháng 1, 7: tiêm vacxin. Hàng tuần: kiểm tra chuồng và sức khỏe. Hàng tháng: tẩy giun, bổ sung khoáng chất. Mùa mưa: kiểm tra độ ẩm chuồng."
+                }
+            ]
+        },
+        de: {
+            title: "Hướng Dẫn Chăm Sóc Dê",
+            subtitle: "Chăm sóc dê hiệu quả trong môi trường trang trại",
+            guides: [
+                {
+                    icon: "chamde.png",
+                    title: "Chăm Sóc",
+                    shortDesc: "Quy trình chăm sóc hàng ngày cho dê",
+                    fullDesc: "Vệ sinh chuồng hàng ngày, đảm bảo thông thoáng. Kiểm tra sức khỏe định kỳ, đặc biệt là móng và răng. Cung cấp nước sạch và tránh stress cho dê."
+                },
+                {
+                    icon: "tiemvaccin.png",
+                    title: "Tiêm Vacxin",
+                    shortDesc: "Lịch tiêm phòng bảo vệ dê",
+                    fullDesc: "Tiêm vacxin phòng bệnh than và tụ huyết trùng vào tháng 3 và 9. Tiêm vacxin dại khi có dịch. Tham khảo bác sĩ thú y để đảm bảo liều lượng."
+                },
+                {
+                    icon: "benhthuonggapde.png",
+                    title: "Bệnh Thường Gặp",
+                    shortDesc: "Các bệnh phổ biến ở dê",
+                    fullDesc: "Bệnh than: sốt cao, chết đột ngột. Tụ huyết trùng: sưng cổ, khó thở. Giun sán: tiêu chảy, giảm cân. Điều trị bằng kháng sinh và vệ sinh chuồng."
+                },
+                {
+                    icon: "thucande.png",
+                    title: "Dinh Dưỡng",
+                    shortDesc: "Chế độ dinh dưỡng cho dê",
+                    fullDesc: "Cỏ tươi, lá cây, thức ăn tinh 0,2-0,4kg/ngày. Bổ sung canxi, phốt pho và vitamin A, D. Nước sạch liên tục, tránh thức ăn mốc hoặc ôi thiu."
+                },
+                {
+                    icon: "sinhsande.png",
+                    title: "Sinh Sản",
+                    shortDesc: "Quy trình sinh sản và chăm sóc dê con",
+                    fullDesc: "Dê cái mang thai 145-155 ngày, đẻ 1-3 con/lứa. Dê đực phối giống từ 8 tháng tuổi. Sau đẻ, giữ khu vực ấm áp, cung cấp thức ăn giàu dinh dưỡng."
+                },
+                {
+                    icon: "lich.png",
+                    title: "Lịch Theo Dõi",
+                    shortDesc: "Lịch trình chăm sóc định kỳ",
+                    fullDesc: "Tháng 2, 8: tiêm vacxin. Hàng tuần: kiểm tra móng và răng. Hàng tháng: tẩy giun, bổ sung khoáng. Mùa khô: tăng cường nước uống."
+                }
+            ]
+        },
+        bo: {
+            title: "Hướng Dẫn Chăm Sóc Bò",
+            subtitle: "Chăm sóc bò hiệu quả trong trang trại",
+            guides: [
+                {
+                    icon: "chambo.png",
+                    title: "Chăm Sóc",
+                    shortDesc: "Quy trình chăm sóc hàng ngày cho bò",
+                    fullDesc: "Vệ sinh chuồng trại hàng ngày, đảm bảo khô ráo. Kiểm tra sức khỏe định kỳ, đặc biệt là chân và dạ dày. Cung cấp không gian rộng để bò di chuyển."
+                },
+                {
+                    icon: "tiemvaccin.png",
+                    title: "Tiêm Vacxin",
+                    shortDesc: "Lịch tiêm phòng bảo vệ bò",
+                    fullDesc: "Tiêm vacxin phòng bệnh lở mồm long móng và tụ huyết trùng vào tháng 3 và 9. Tiêm vacxin dại khi có dịch. Tham khảo bác sĩ thú y."
+                },
+                {
+                    icon: "benhthuonggapbo.png",
+                    title: "Bệnh Thường Gặp",
+                    shortDesc: "Các bệnh phổ biến ở bò",
+                    fullDesc: "Lở mồm long móng: sốt, lở loét miệng. Tụ huyết trùng: khó thở, sưng cổ. Giun sán: giảm cân, tiêu chảy. Điều trị bằng kháng sinh và vệ sinh chuồng."
+                },
+                {
+                    icon: "thucanbo.png",
+                    title: "Dinh Dưỡng",
+                    shortDesc: "Chế độ dinh dưỡng cho bò",
+                    fullDesc: "Cỏ tươi, rơm, thức ăn tinh 1-2kg/ngày. Bổ sung canxi, phốt pho, vitamin A, D. Nước sạch liên tục, chia nhỏ bữa ăn để tránh đầy hơi."
+                },
+                {
+                    icon: "sinhsanbo.png",
+                    title: "Sinh Sản",
+                    shortDesc: "Quy trình sinh sản và chăm sóc bò con",
+                    fullDesc: "Bò cái mang thai 280-290 ngày, đẻ 1 con/lứa. Bò đực phối giống từ 18 tháng tuổi. Sau đẻ, giữ khu vực sạch sẽ, cung cấp thức ăn giàu protein."
+                },
+                {
+                    icon: "lich.png",
+                    title: "Lịch Theo Dõi",
+                    shortDesc: "Lịch trình chăm sóc định kỳ",
+                    fullDesc: "Tháng 1, 7: tiêm vacxin. Hàng tuần: kiểm tra chân và dạ dày. Hàng tháng: tẩy giun, bổ sung khoáng. Mùa mưa: kiểm tra độ ẩm chuồng."
+                }
+            ]
+        },
+        trau: {
+            title: "Hướng Dẫn Chăm Sóc Trâu",
+            subtitle: "Chăm sóc trâu hiệu quả trong trang trại",
+            guides: [
+                {
+                    icon: "chamtrau.png",
+                    title: "Chăm Sóc",
+                    shortDesc: "Quy trình chăm sóc hàng ngày cho trâu",
+                    fullDesc: "Vệ sinh chuồng trại hàng ngày, cung cấp bãi tắm nước. Kiểm tra sức khỏe định kỳ, đặc biệt là móng và da. Tránh stress và tiếng ồn lớn."
+                },
+                {
+                    icon: "tiemvaccin.png",
+                    title: "Tiêm Vacxin",
+                    shortDesc: "Lịch tiêm phòng bảo vệ trâu",
+                    fullDesc: "Tiêm vacxin phòng bệnh lở mồm long móng và tụ huyết trùng vào tháng 2 và 8. Tiêm vacxin dại khi cần. Tham khảo bác sĩ thú y."
+                },
+                {
+                    icon: "benhthuonggaptrau.png",
+                    title: "Bệnh Thường Gặp",
+                    shortDesc: "Các bệnh phổ biến ở trâu",
+                    fullDesc: "Lở mồm long móng: sốt, lở loét miệng. Tụ huyết trùng: khó thở, sưng cổ. Giun sán: gầy yếu, tiêu chảy. Điều trị bằng thuốc và vệ sinh chuồng."
+                },
+                {
+                    icon: "thucantrau.png",
+                    title: "Dinh Dưỡng",
+                    shortDesc: "Chế độ dinh dưỡng cho trâu",
+                    fullDesc: "Cỏ tươi, rơm, lá cây. Bổ sung thức ăn tinh 1-1,5kg/ngày. Cần nước sạch liên tục, bổ sung muối và khoáng chất. Tránh thức ăn ôi thiu."
+                },
+                {
+                    icon: "sinhsantrau.png",
+                    title: "Sinh Sản",
+                    shortDesc: "Quy trình sinh sản và chăm sóc trâu con",
+                    fullDesc: "Trâu cái mang thai 300-330 ngày, đẻ 1 con/lứa. Trâu đực phối giống từ 2 tuổi. Sau đẻ, giữ khu vực khô ráo, cung cấp thức ăn giàu năng lượng."
+                },
+                {
+                    icon: "lich.png",
+                    title: "Lịch Theo Dõi",
+                    shortDesc: "Lịch trình chăm sóc định kỳ",
+                    fullDesc: "Tháng 3, 9: tiêm vacxin. Hàng tuần: kiểm tra móng và da. Hàng tháng: tẩy giun, bổ sung khoáng. Mùa khô: tăng cường nước uống."
+                }
+            ]
+        },
+        huou: {
+            title: "Hướng Dẫn Chăm Sóc Hươu",
+            subtitle: "Chăm sóc hươu trong môi trường vườn thú",
+            guides: [
+                {
+                    icon: "chamhuou.png",
+                    title: "Chăm Sóc",
+                    shortDesc: "Quy trình chăm sóc hàng ngày cho hươu",
+                    fullDesc: "Tránh tiếng ồn và chuyển động đột ngột. Kiểm tra sừng và chân định kỳ. Vệ sinh chuồng hàng ngày, cung cấp không gian rộng để hươu di chuyển."
+                },
+                {
+                    icon: "tiemvaccin.png",
+                    title: "Tiêm Vacxin",
+                    shortDesc: "Lịch tiêm phòng bảo vệ hươu",
+                    fullDesc: "Tiêm vacxin phòng bệnh lở mồm long móng và viêm phổi vào tháng 2 và 8. Tiêm vacxin dại khi có dịch. Tham khảo bác sĩ thú y."
+                },
+                {
+                    icon: "benhthuonggaphuou.png",
+                    title: "Bệnh Thường Gặp",
+                    shortDesc: "Các bệnh phổ biến ở hươu",
+                    fullDesc: "Lở mồm long móng: sốt, lở loét miệng. Viêm phổi: ho, khó thở. Ký sinh trùng: rụng lông, gầy yếu. Điều trị bằng thuốc và vệ sinh môi trường."
+                },
+                {
+                    icon: "thucanhuou.png",
+                    title: "Dinh Dưỡng",
+                    shortDesc: "Chế độ dinh dưỡng cho hươu",
+                    fullDesc: "Cỏ tươi, lá cây, rau củ như cà rốt. Bổ sung thức ăn viên chuyên dụng. Nước sạch liên tục, chia nhỏ bữa ăn để tránh đầy hơi."
+                },
+                {
+                    icon: "sinhsanhuou.png",
+                    title: "Sinh Sản",
+                    shortDesc: "Quy trình sinh sản và chăm sóc hươu con",
+                    fullDesc: "Hươu cái mang thai 230-240 ngày, đẻ 1 con/lứa. Hươu đực phối giống từ 2 tuổi. Sau đẻ, giữ khu vực yên tĩnh, cung cấp thức ăn giàu năng lượng."
+                },
+                {
+                    icon: "lich.png",
+                    title: "Lịch Theo Dõi",
+                    shortDesc: "Lịch trình chăm sóc định kỳ",
+                    fullDesc: "Tháng 2, 8: tiêm vacxin. Hàng tuần: kiểm tra sừng và chân. Hàng tháng: tẩy giun, bổ sung vitamin. Mùa khô: tăng cường nước uống."
+                }
+            ]
+        },
+        heotoc: {
+            title: "Hướng Dẫn Chăm Sóc Heo Tộc",
+            subtitle: "Chăm sóc heo tộc trong môi trường trang trại",
+            guides: [
+                {
+                    icon: "chamheotoc.png",
+                    title: "Chăm Sóc",
+                    shortDesc: "Quy trình chăm sóc hàng ngày cho heo tộc",
+                    fullDesc: "Vệ sinh chuồng hàng ngày, đảm bảo khô ráo. Kiểm tra sức khỏe định kỳ, đặc biệt là da và chân. Cung cấp không gian để heo vận động tự nhiên."
+                },
+                {
+                    icon: "tiemvaccin.png",
+                    title: "Tiêm Vacxin",
+                    shortDesc: "Lịch tiêm phòng bảo vệ heo tộc",
+                    fullDesc: "Tiêm vacxin phòng bệnh lở mồm long móng và dịch tả lợn vào tháng 3 và 9. Tiêm nhắc lại mỗi 6 tháng. Tham khảo bác sĩ thú y."
+                },
+                {
+                    icon: "benhthuonggapheotoc.png",
+                    title: "Bệnh Thường Gặp",
+                    shortDesc: "Các bệnh phổ biến ở heo tộc",
+                    fullDesc: "Lở mồm long móng: sốt, lở loét miệng. Dịch tả lợn: sốt cao, tiêu chảy. Giun sán: gầy yếu, chậm lớn. Điều trị bằng thuốc và vệ sinh chuồng."
+                },
+                {
+                    icon: "thucanheotoc.png",
+                    title: "Dinh Dưỡng",
+                    shortDesc: "Chế độ dinh dưỡng cho heo tộc",
+                    fullDesc: "Cám, rau xanh, củ quả như khoai lang, bí đỏ. Bổ sung protein và khoáng chất. Nước sạch liên tục, tránh thức ăn ôi thiu. Cho ăn 2-3 lần/ngày."
+                },
+                {
+                    icon: "sinhsanheotoc.png",
+                    title: "Sinh Sản",
+                    shortDesc: "Quy trình sinh sản và chăm sóc heo con",
+                    fullDesc: "Heo cái mang thai 110-120 ngày, đẻ 6-12 con/lứa. Heo đực phối giống từ 8 tháng tuổi. Sau đẻ, giữ khu vực ấm áp, cung cấp thức ăn giàu dinh dưỡng."
+                },
+                {
+                    icon: "lich.png",
+                    title: "Lịch Theo Dõi",
+                    shortDesc: "Lịch trình chăm sóc định kỳ",
+                    fullDesc: "Tháng 2, 8: tiêm vacxin. Hàng tuần: kiểm tra da và chân. Hàng tháng: tẩy giun, bổ sung vitamin. Mùa mưa: kiểm tra độ ẩm chuồng."
+                }
+            ]
         }
     };
 
-    // Chọn loại thú với tab menu
     function selectAnimal(animalKey, tabElement) {
         const data = animalData[animalKey];
 
-        // Cập nhật active state cho tabs
         document.querySelectorAll('.tab-item').forEach(item => item.classList.remove('active'));
         tabElement.classList.add('active');
 
-        // Cập nhật title và subtitle
         document.getElementById('mainTitle').textContent = data.title;
         document.getElementById('subtitle').textContent = data.subtitle;
 
-        // Đóng tất cả cards đã mở
         document.querySelectorAll('.social-card.expanded').forEach(card => {
             card.classList.remove('expanded');
             card.querySelector('.expandable-content').classList.remove('expanded');
         });
 
-        // Cập nhật guide cards
         const socialGrid = document.getElementById('socialGrid');
         socialGrid.innerHTML = data.guides.map(guide => `
             <div class="social-card" onclick="toggleCard(this)">
