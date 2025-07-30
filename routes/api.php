@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Models\License;
 use Illuminate\Support\Carbon;
 
+
 Route::get('/licenses/check', function (Request $request) {
     $machineId = $request->query('machine_id');
 
@@ -28,5 +29,4 @@ Route::get('/licenses/check', function (Request $request) {
         'name' => $license->name,
         'expire_in_days' => $now->diffInDays($expire),
     ]);
-
 });
