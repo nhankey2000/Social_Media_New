@@ -5,7 +5,7 @@ use App\Models\License;
 use Illuminate\Support\Carbon;
 
 
-Route::get('/licenses/check', function (Request $request) {
+Route::get('/check-key', function (Request $request) {
     $machineId = $request->query('machine_id');
 
     if (!$machineId) {
