@@ -12,9 +12,10 @@ return new class extends Migration
     public function up()
     {
         Schema::table('licenses', function (Blueprint $table) {
-            $table->date('expires_at')->nullable();
+            $table->date('expires_at')->nullable(); // 👈 Thêm cột mới
         });
     }
+
 
     public function down()
     {
