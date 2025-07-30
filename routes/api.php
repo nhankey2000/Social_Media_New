@@ -1,15 +1,17 @@
 <?php
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use App\Models\License;
 use Illuminate\Support\Carbon;
 
-Route::get('/check_license', function (\Illuminate\Http\Request $request) {
-    $id = $request->query('id');
+Route::get('/licenses/check', function (Request $request) {
+    $machineId = $request->query('machine_id');
 
-    if (!$id) {
-        return response()->json(['error' => 'missing_id'], 400);
+    if (!$machineId) {
+        return response()->json(['error' => 'missing_machine_id'], 400);
     }
 
-    $license = License::where('machine_id', $id)->first();
+    $license = License::where('machine_id', $machineId)->first();
 
     if (!$license) {
         return response()->json(['error' => 'not_found'], 404);
@@ -24,7 +26,6 @@ Route::get('/check_license', function (\Illuminate\Http\Request $request) {
 
     return response()->json([
         'name' => $license->name,
-        'expire_in_days' => $now->diffInDays($expire),
+        'expire_in_days' => $now->floatDiffInDays($expire),
     ]);
 });
-
