@@ -26,6 +26,7 @@ Route::get('/licenses/check', function (Request $request) {
 
     return response()->json([
         'name' => $license->name,
-        'expire_in_days' => $now->floatDiffInDays($expire),
+        'expire_in_days' => $now->diffInDays($expire),
     ]);
+
 });
