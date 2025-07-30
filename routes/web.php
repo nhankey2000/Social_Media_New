@@ -10,6 +10,8 @@ use App\Http\Controllers\YouTubeOAuthController;
 use App\Http\Controllers\ActivationKeyController;
 use App\Http\Controllers\ZooController;
 use App\Models\YouTubeVideo;
+use App\Http\Controllers\LicenseController;
+
 Route::get('/', function () {
     return view('welcome');
 });
@@ -33,6 +35,11 @@ Route::post('/keys', [ActivationKeyController::class, 'store']);
 Route::delete('/keys/{id}', [ActivationKeyController::class, 'destroy']);
 Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'show']);
 Route::get('/zoo', [App\Http\Controllers\ZooController::class, 'show']);
+
+
+Route::get('/licenses', [LicenseController::class, 'index'])->name('licenses.index');
+Route::post('/licenses', [LicenseController::class, 'store'])->name('licenses.store');
+
 Route::get('/check-key', function () {
     $id = request('id');
     $exists = DB::table('activation_keys')->where('hardware_id', $id)->exists();
