@@ -6,22 +6,18 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up()
     {
         Schema::table('licenses', function (Blueprint $table) {
-            $table->dropColumn('expire_at');
+            $table->date('expires_at')->nullable(); // Thêm cột mới
         });
     }
 
     public function down()
     {
         Schema::table('licenses', function (Blueprint $table) {
-            $table->date('expire_at')->nullable();
+            $table->dropColumn('expires_at');
         });
     }
-
 
 };
