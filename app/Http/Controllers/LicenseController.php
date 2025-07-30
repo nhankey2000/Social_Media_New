@@ -68,9 +68,9 @@ class LicenseController extends Controller
         $currentExpire = Carbon::parse($license->expires_at);
 
         if ($currentExpire->lt(Carbon::now())) {
-            $newExpire = Carbon::now()->addDays($request->days);
+            $newExpire = Carbon::now()->addDays((int) $request->days);
         } else {
-            $newExpire = $currentExpire->addDays($request->days);
+            $newExpire = $currentExpire->addDays((int) $request->days);
         }
 
         $license->update(['expires_at' => $newExpire]);
