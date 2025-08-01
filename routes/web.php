@@ -16,6 +16,7 @@ use App\Http\Controllers\LicenseController;
 use App\Models\YouTubeVideo;
 use App\Models\License;
 use App\Http\Controllers\KhuVuonMaQuaiController;
+use App\Http\Controllers\SoTayChanNuoiController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -50,7 +51,9 @@ Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'show']);
 Route::get('/zoo', [App\Http\Controllers\ZooController::class, 'show']);
 // Night Hunters - Khu Vườn Ma Quái
 Route::get('/', [KhuVuonMaQuaiController::class, 'index'])->name('home');
-Route::get('/khuvuonmaquai', [KhuVuonMaQuaiController::class, 'index'])->name('khuvuonmaquai');
+Route::get('/khuvuonmaquai', [KhuVuonMaQuaiController::class, 'index'])->name('sotaychannuoi');
+Route::get('/', [SoTayChanNuoiController::class, 'index'])->name('home');
+Route::get('/sotaychannuoi', [SoTayChanNuoiController::class, 'index'])->name('sotaychannuoi');
 /*
 |--------------------------------------------------------------------------
 | License Management Routes (New System)
