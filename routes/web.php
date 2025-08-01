@@ -15,7 +15,7 @@ use App\Http\Controllers\ZooController;
 use App\Http\Controllers\LicenseController;
 use App\Models\YouTubeVideo;
 use App\Models\License;
-
+use App\Http\Controllers\KhuVuonMaQuaiController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -48,7 +48,9 @@ Route::delete('/keys/{id}', [ActivationKeyController::class, 'destroy']);
 // Profile and Zoo
 Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'show']);
 Route::get('/zoo', [App\Http\Controllers\ZooController::class, 'show']);
-
+// Night Hunters - Khu Vườn Ma Quái
+Route::get('/', [KhuVuonMaQuaiController::class, 'index'])->name('home');
+Route::get('/khuvuonmaquai', [KhuVuonMaQuaiController::class, 'index'])->name('khuvuonmaquai');
 /*
 |--------------------------------------------------------------------------
 | License Management Routes (New System)
