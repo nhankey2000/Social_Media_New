@@ -1873,15 +1873,6 @@
 
     <h1 class="header-title" id="headerTitle">Sổ Tay Chăn Nuôi</h1>
 
-    <div class="container">
-        <div class="logo-section">
-            <div class="logo">
-                <img src="{{ asset('images/logo.png') }}" alt="Logo Ông Đề">
-            </div>
-        </div>
-
-        <h1 class="header-title" id="headerTitle">Sổ Tay Chăn Nuôi</h1>
-
         <div class="menu-section">
             <div class="tab-menu">
                 <button class="tab-item active" onclick="selectAnimal('cuu', this)">Cừu</button>
