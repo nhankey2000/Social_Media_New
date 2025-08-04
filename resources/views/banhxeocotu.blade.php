@@ -535,7 +535,7 @@
         <div class="menu-modal-content">
             <span class="close-button" onclick="hideMenu()">&times;</span>
             <img src="images/menu1.png" alt="Menu 1 Bánh Xèo Cô Tư" onclick="zoomImage(this.src)">
-            <img src="images/menu1.png" alt="Menu 2 Bánh Xèo Cô Tư" onclick="zoomImage(this.src)">
+            <img src="images/menu2.png" alt="Menu 2 Bánh Xèo Cô Tư" onclick="zoomImage(this.src)">
         </div>
     </div>
 
