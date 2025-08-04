@@ -17,7 +17,6 @@ use App\Models\YouTubeVideo;
 use App\Models\License;
 use App\Http\Controllers\KhuVuonMaQuaiController;
 use App\Http\Controllers\SoTayChanNuoiController;
-use App\Http\Controllers\BanhXeoCoTuController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -25,7 +24,7 @@ use App\Http\Controllers\BanhXeoCoTuController;
 */
 
 // Redirect root to licenses management
-Route::get('/', function () {
+Route::get('/licenses', function () {
     return redirect()->route('licenses.index');
 });
 
@@ -51,12 +50,8 @@ Route::delete('/keys/{id}', [ActivationKeyController::class, 'destroy']);
 Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'show']);
 Route::get('/zoo', [App\Http\Controllers\ZooController::class, 'show']);
 // Night Hunters - Khu Vườn Ma Quái
-Route::get('/', [KhuVuonMaQuaiController::class, 'index'])->name('home');
-Route::get('/khuvuonmaquai', [KhuVuonMaQuaiController::class, 'index'])->name('khuvuonmaquai');
-Route::get('/', [SoTayChanNuoiController::class, 'index'])->name('home');
-Route::get('/sotaychannuoi', [SoTayChanNuoiController::class, 'index'])->name('sotaychannuoi');
-Route::get('/', [SoTayChanNuoiController::class, 'index'])->name('home');
-Route::get('/banhxeocotu', [BanhXeoCoTuController::class, 'index'])->name('banhxeocotu');
+Route::get('/khu-vuon-ma-quai', [KhuVuonMaQuaiController::class, 'index'])->name('sotaychannuoi');
+Route::get('/so-tay-chan-nuoi', [SoTayChanNuoiController::class, 'index'])->name('sotaychannuoi');
 /*
 |--------------------------------------------------------------------------
 | License Management Routes (New System)
