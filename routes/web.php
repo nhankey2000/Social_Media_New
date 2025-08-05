@@ -96,7 +96,6 @@ Route::get('/check-key', function (Request $request) {
         // Return legacy format for old clients
         if ($request->expectsJson() || $request->query('format') === 'json') {
             return response()->json([
-                'status' => 'ok',
                 'name' => 'Legacy User',
                 'expire_in_days' => 999, // Legacy keys don't expire
             ]);
