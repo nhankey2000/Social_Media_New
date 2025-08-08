@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Hệ Sinh Thái Ông Đề</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab, #667eea, #764ba2);
+            background-size: 400% 400%;
+            animation: gradientShift 8s ease infinite;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            color: #1a1a1a;
+            line-height: 1.6;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 60% 80%, rgba(255, 255, 255, 0.04) 0%, transparent 50%),
+                radial-gradient(circle at 90% 60%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+            animation: floatParticles 12s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes floatParticles {
+            0%, 100% { transform: translateY(0px) rotate(0deg) scale(1); opacity: 0.7; }
+            33% { transform: translateY(-20px) rotate(120deg) scale(1.1); opacity: 1; }
+            66% { transform: translateY(10px) rotate(240deg) scale(0.9); opacity: 0.8; }
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            text-align: center;
+            animation: fadeInUp 0.8s ease-out;
+            position: relative;
+            z-index: 10;
+        }
+
+        .container p {
+            color: white;
+        }
+
+        .header-title {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 24px;
+            letter-spacing: -0.02em;
+            background: linear-gradient(-45deg, #ffffff, #ffdd59, #ffd700, #32cd32, #00ff00, #228b22, #ff8c00, #ffffff);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeIn 1s ease-out 0.3s both, gradientText 6s ease infinite;
+            text-align: center;
+        }
+
+        @keyframes gradientText {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .menu-section {
+            margin-bottom: 32px;
+            animation: fadeIn 1s ease-out 0.4s both;
+        }
+
+        .tab-menu {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 100%;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .tab-menu::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab-item {
+            padding: 10px 16px;
+            border-radius: 12px;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            white-space: nowrap;
+            min-width: 100px;
+        }
+
+        .tab-item:hover {
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .tab-item.active {
+            background: rgba(255, 255, 255, 0.95);
+            color: #1f2937;
+            font-weight: 600;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .logo-section {
+            margin-bottom: 20px;
+            animation: fadeIn 1s ease-out 0.2s both;
+        }
+
+        .logo {
+            width: 160px;
+            height: 96px;
+            margin: 0 auto 20px;
+            border-radius: 20px;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: translateY(-4px);
+        }
+
+        .logo img {
+            width: 128px;
+            height: 64px;
+            border-radius: 12px;
+        }
+
+        .main-title {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+            background: linear-gradient(-45deg, #ffffff, #ffdd59, #ffd700, #32cd32, #00ff00, #228b22, #ff8c00, #ffffff);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeIn 1s ease-out 0.4s both, gradientText 6s ease infinite;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: white;
+            margin-bottom: 32px;
+            font-weight: 400;
+            animation: fadeIn 1s ease-out 0.5s both;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .content-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            margin-bottom: 32px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .content-table th, .content-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            font-size: 0.85rem;
+            min-width: 80px; /* Ensure minimum width for mobile */
+        }
+
+        .content-table th {
+            background: rgba(0, 0, 0, 0.05);
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .content-table td {
+            color: #374151;
+            vertical-align: top;
+        }
+
+        .content-table tr:hover {
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        .media-button {
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(45deg, #4ecdc4, #45b7d1);
+            color: white;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 2px;
+            width: 36px;
+            height: 36px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .media-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .media-button.view {
+            background: linear-gradient(45deg, #4ecdc4, #45b7d1);
+        }
+
+        .media-button.download {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+        }
+
+        .media-button.copy {
+            background: linear-gradient(45deg, #10b981, #059669);
+        }
+
+        .media-button i {
+            font-size: 1rem;
+        }
+
+        .media-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .type-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .type-badge.image {
+            background: rgba(34, 197, 94, 0.1);
+            color: #16a34a;
+        }
+
+        .type-badge.video {
+            background: rgba(59, 130, 246, 0.1);
+            color: #2563eb;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 32px;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .error {
+            text-align: center;
+            padding: 32px;
+            color: #ff6b6b;
+            font-size: 1rem;
+        }
+
+        .footer {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            animation: fadeIn 1s ease-out 1.6s both;
+        }
+
+        .footer-text {
+            font-size: 0.8rem;
+            color: white;
+            margin-bottom: 4px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            max-width: 90vw;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .close-button {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #1f2937;
+        }
+
+        .modal-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+
+        .modal-table th, .modal-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            font-size: 0.8rem;
+        }
+
+        .modal-table th {
+            background: rgba(0, 0, 0, 0.05);
+            font-weight: 600;
+        }
+
+        .media-modal-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .media-modal-content img {
+            max-width: 100%;
+            max-height: 60vh;
+            border-radius: 8px;
+        }
+
+        .media-modal-content video {
+            max-width: 100%;
+            max-height: 60vh;
+            border-radius: 8px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+
+            .container {
+                padding: 0 8px;
+            }
+
+            .header-title {
+                font-size: 1.8rem;
+                margin-bottom: 20px;
+            }
+
+            .main-title {
+                font-size: 1.8rem;
+                margin-bottom: 10px;
+            }
+
+            .subtitle {
+                font-size: 0.95rem;
+                margin-bottom: 24px;
+            }
+
+            .logo {
+                width: 120px;
+                height: 72px;
+                margin-bottom: 16px;
+            }
+
+            .logo img {
+                width: 96px;
+                height: 48px;
+            }
+
+            .tab-menu {
+                gap: 6px;
+                padding: 6px;
+            }
+
+            .tab-item {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+                min-width: 90px;
+            }
+
+            .content-table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+
+            .content-table th, .content-table td {
+                padding: 8px;
+                font-size: 0.75rem;
+                min-width: 80px; /* Adjusted for better mobile display */
+            }
+
+            .media-preview {
+                width: 80px;
+                height: 80px;
+            }
+
+            .media-button {
+                width: 32px;
+                height: 32px;
+                padding: 6px;
+                font-size: 0.75rem;
+            }
+
+            .media-button i {
+                font-size: 0.9rem;
+            }
+
+            .modal-content {
+                padding: 12px;
+                max-width: 95vw;
+                max-height: 85vh;
+            }
+
+            .modal-table th, .modal-table td {
+                padding: 8px;
+                font-size: 0.75rem;
+            }
+
+            .media-modal-content img,
+            .media-modal-content video {
+                max-height: 50vh;
+            }
+
+            .footer-text {
+                font-size: 0.75rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-title {
+                font-size: 1.5rem;
+                margin-bottom: 16px;
+            }
+
+            .main-title {
+                font-size: 1.5rem;
+                margin-bottom: 8px;
+            }
+
+            .subtitle {
+                font-size: 0.85rem;
+                margin-bottom: 20px;
+            }
+
+            .logo {
+                width: 100px;
+                height: 60px;
+            }
+
+            .logo img {
+                width: 80px;
+                height: 40px;
+            }
+
+            .tab-item {
+                padding: 6px 10px;
+                font-size: 0.75rem;
+                min-width: 80px;
+            }
+
+            .content-table th, .content-table td {
+                padding: 6px;
+                font-size: 0.7rem;
+                min-width: 80px; /* Adjusted for better mobile display */
+            }
+
+            .media-preview {
+                width: 60px;
+                height: 60px;
+            }
+
+            .media-button {
+                width: 28px;
+                height: 28px;
+                padding: 5px;
+                font-size: 0.7rem;
+            }
+
+            .media-button i {
+                font-size: 0.8rem;
+            }
+
+            .modal-content {
+                padding: 10px;
+                max-width: 98vw;
+            }
+
+            .modal-table th, .modal-table td {
+                padding: 6px;
+                font-size: 0.7rem;
+            }
+
+            .close-button {
+                top: 10px;
+                right: 10px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="logo-section">
+        <div class="logo">
+            <img src="{{ asset('images/logo.png') }}" alt="Logo Ông Đề" onerror="this.style.display='none'">
+        </div>
+    </div>
+
+    <h1 class="header-title">Hệ Thống Quản Lý Nội Dung</h1>
+
+    <div class="menu-section">
+        <div class="tab-menu">
+            <button class="tab-item active" onclick="selectContent('posts', this)">Nội Dung Bài Viết</button>
+            <button class="tab-item" onclick="selectContent('images', this)">Kho Ảnh</button>
+            <button class="tab-item" onclick="selectContent('videos', this)">Kho Video</button>
+        </div>
+    </div>
+
+    <h2 class="main-title" id="mainTitle">Nội Dung Bài Viết</h2>
+    <p class="subtitle" id="subtitle">Quản lý các bài viết và nội dung</p>
+
+    <div id="contentArea">
+        <div class="loading">Đang tải dữ liệu...</div>
+    </div>
+
+    <div class="modal" id="postModal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('postModal')">&times;</span>
+            <h2 id="modalTitle"></h2>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="mediaModal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('mediaModal')">&times;</span>
+            <div id="mediaModalContent"></div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p class="footer-text">© 2025 Làng Du Lịch Sinh Thái Ông Đề. Tất cả quyền được bảo lưu.</p>
+        <p class="footer-text">Công Ty TNHH Làng Du Lịch Sinh Thái Ông Đề.</p>
+        <p class="footer-text">Địa chỉ: Số 168-AB1, Đường Xuân Thuỷ, Khu Dân Cư Hồng Phát, Phường An Bình, Thành Phố Cần Thơ, Việt Nam.</p>
+        <p class="footer-text">Mã Số Thuế: 1801218923 | Hotline: 0931 852 113</p>
+    </div>
+</div>
+
+<script>
+    // API endpoints
+    const API_BASE_URL = window.location.origin;
+
+    const apiEndpoints = {
+        posts: `${API_BASE_URL}/api/data-posts`,
+        images: `${API_BASE_URL}/api/images-data?type=image`,
+        videos: `${API_BASE_URL}/api/images-data?type=video`
+    };
+
+    // Content configuration
+    const contentConfig = {
+        posts: {
+            title: "Nội Dung Bài Viết",
+            subtitle: "Quản lý các bài viết và nội dung",
+            columns: ['Tiêu Đề', 'Loại', 'Nội Dung',  'Hành Động'],
+            renderRow: (item) => `
+                <tr>
+                    <td><strong>${item.title.length >13 ? item.title.substring(0, 13) + '...' : item.title}</strong></td>
+                    <td><span class="type-badge ${item.type}">${item.type === 'image' ? 'Ảnh' : 'Video'}</span></td>
+                    <td>${item.content ? item.content.substring(0, 100) + '...' : 'Không có nội dung'}</td>
+
+                    <td>
+                        <button class="media-button copy" onclick="copyContent('${encodeURIComponent(item.content || '')}')"><i class="fas fa-clipboard"></i></button>
+                        <button class="media-button view" onclick="viewPost(${item.id}, '${encodeURIComponent(item.title)}', '${encodeURIComponent(item.content || '')}', '${item.type}', '${formatDate(item.created_at)}')"><i class="fas fa-eye"></i></button>
+                    </td>
+                </tr>
+            `
+        },
+        images: {
+            title: "Kho Ảnh",
+            subtitle: "Quản lý và xem các hình ảnh",
+            columns: ['Preview', 'Loại', 'Ngày Tạo', 'Hành Động'],
+            renderRow: (item) => `
+                <tr>
+                    <td>
+                        ${item.url ? `<img src="${item.url}" alt="Preview" class="media-preview" onerror="this.style.display='none'">` : 'Không có ảnh'}
+                    </td>
+                    <td><span class="type-badge ${item.type}">${item.type === 'image' ? 'Ảnh' : 'Video'}</span></td>
+                    <td>${formatDate(item.created_at)}</td>
+                    <td>
+                        ${item.url ? `
+                            <button class="media-button view" onclick="viewMedia('${item.url}', 'image')"><i class="fas fa-eye"></i></button>
+                            <button class="media-button download" onclick="downloadMedia('${item.url}')"><i class="fas fa-download"></i></button>
+                        ` : 'Không có tệp'}
+                    </td>
+                </tr>
+            `
+        },
+        videos: {
+            title: "Kho Video",
+            subtitle: "Quản lý và xem các video",
+            columns: ['Preview', 'Loại', 'Ngày Tạo', 'Hành Động'],
+            renderRow: (item) => `
+                <tr>
+                    <td>
+                        ${item.url ? `<video class="media-preview" muted><source src="${item.url}" type="video/mp4"></video>` : 'Không có video'}
+                    </td>
+                    <td><span class="type-badge ${item.type}">${item.type === 'image' ? 'Ảnh' : 'Video'}</span></td>
+                    <td>${formatDate(item.created_at)}</td>
+                    <td>
+                        ${item.url ? `
+                            <button class="media-button view" onclick="viewMedia('${item.url}', 'video')"><i class="fas fa-eye"></i></button>
+                            <button class="media-button download" onclick="downloadMedia('${item.url}')"><i class="fas fa-download"></i></button>
+                        ` : 'Không có tệp'}
+                    </td>
+                </tr>
+            `
+        }
+    };
+
+    // Current active content type
+    let currentContentType = 'posts';
+
+    // Function to format date
+    function formatDate(dateString) {
+        if (!dateString) return 'Không có';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('vi-VN') + ' ' + date.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'});
+    }
+
+    // Function to select content type
+    async function selectContent(contentKey, tabElement) {
+        document.querySelectorAll('.tab-item').forEach(item => item.classList.remove('active'));
+        tabElement.classList.add('active');
+
+        const config = contentConfig[contentKey];
+        document.getElementById('mainTitle').textContent = config.title;
+        document.getElementById('subtitle').textContent = config.subtitle;
+
+        currentContentType = contentKey;
+        await loadData(contentKey);
+    }
+
+    // Function to load data from API
+    async function loadData(contentType) {
+        const contentArea = document.getElementById('contentArea');
+        const config = contentConfig[contentType];
+
+        try {
+            contentArea.innerHTML = '<div class="loading">Đang tải dữ liệu...</div>';
+
+            const response = await fetch(apiEndpoints[contentType]);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const items = data.data || data;
+
+            if (!Array.isArray(items) || items.length === 0) {
+                contentArea.innerHTML = '<div class="error">Không có dữ liệu để hiển thị</div>';
+                return;
+            }
+
+            contentArea.innerHTML = `
+                <table class="content-table">
+                    <thead>
+                        <tr>
+                            ${config.columns.map(col => `<th>${col}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${items.map(item => config.renderRow(item)).join('')}
+                    </tbody>
+                </table>
+            `;
+
+        } catch (error) {
+            console.error('Error loading data:', error);
+            contentArea.innerHTML = `<div class="error">Lỗi tải dữ liệu: ${error.message}</div>`;
+        }
+    }
+
+    // Function to view media in modal
+    function viewMedia(url, type) {
+        const modal = document.getElementById('mediaModal');
+        const modalContent = document.getElementById('mediaModalContent');
+
+        if (type === 'image') {
+            modalContent.innerHTML = `
+                <div class="media-modal-content">
+                    <img src="${url}" alt="Image Preview">
+                    <div>
+                        <button class="media-button download" onclick="downloadMedia('${url}')"><i class="fas fa-download"></i></button>
+                    </div>
+                </div>
+            `;
+        } else if (type === 'video') {
+            modalContent.innerHTML = `
+                <div class="media-modal-content">
+                    <video controls autoplay>
+                        <source src="${url}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                    <div>
+                        <button class="media-button download" onclick="downloadMedia('${url}')"><i class="fas fa-download"></i></button>
+                    </div>
+                </div>
+            `;
+        }
+
+        modal.style.display = 'flex';
+    }
+
+    // Function to download media
+    function downloadMedia(url) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = url.split('/').pop();
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Function to copy content
+    function copyContent(content) {
+        const decodedContent = decodeURIComponent(content);
+        navigator.clipboard.writeText(decodedContent).then(() => {
+            alert('Đã sao chép nội dung!');
+        }).catch(err => {
+            console.error('Lỗi khi sao chép:', err);
+            alert('Lỗi khi sao chép nội dung');
+        });
+    }
+
+    // Function to view post details in modal
+    function viewPost(postId, title, content, type, created_at) {
+        const modal = document.getElementById('postModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalContent = document.getElementById('modalContent');
+
+        modalTitle.textContent = decodeURIComponent(title);
+        modalContent.innerHTML = `
+            <table class="modal-table">
+                <tr>
+                    <th>ID</th>
+                    <td>${postId}</td>
+                </tr>
+                <tr>
+                    <th>Tiêu Đề</th>
+                    <td>${decodeURIComponent(title)}</td>
+                </tr>
+                <tr>
+                    <th>Loại</th>
+                    <td><span class="type-badge ${type}">${type === 'image' ? 'Ảnh' : 'Video'}</span></td>
+                </tr>
+                <tr>
+                    <th>Nội Dung</th>
+                    <td>${decodeURIComponent(content) || 'Không có nội dung'}</td>
+                </tr>
+                <tr>
+                    <th>Ngày Tạo</th>
+                    <td>${created_at}</td>
+                </tr>
+            </table>
+            <button class="media-button copy" style="margin-top: 12px;" onclick="copyContent('${content}')"><i class="fas fa-clipboard"></i></button>
+        `;
+
+        modal.style.display = 'flex';
+    }
+
+    // Function to close modal
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+
+    // Initialize with posts content
+    document.addEventListener('DOMContentLoaded', function() {
+        selectContent('posts', document.querySelector('.tab-item.active'));
+    });
+</script>
+</body>
+</html>

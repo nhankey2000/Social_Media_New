@@ -1,0 +1,25 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('images_data', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->unsignedBigInteger('post_id');
+            $table->enum('type', ['video', 'image'])->nullable(false);
+            $table->string('url', 255)->nullable(false);
+            $table->timestamp('created_at')->useCurrent();
+            $table->foreign('post_id')->references('id')->on('data_post')->onDelete('cascade');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('images_data');
+    }
+};

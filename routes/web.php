@@ -18,6 +18,9 @@ use App\Models\License;
 use App\Http\Controllers\KhuVuonMaQuaiController;
 use App\Http\Controllers\SoTayChanNuoiController;
 use App\Http\Controllers\BanhXeoCoTuController;
+use App\Http\Controllers\DulieuTruyenThongController;
+use App\Models\DataPost;
+use App\Models\ImagesData;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -50,10 +53,14 @@ Route::delete('/keys/{id}', [ActivationKeyController::class, 'destroy']);
 // Profile and Zoo
 Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'show']);
 Route::get('/zoo', [App\Http\Controllers\ZooController::class, 'show']);
+Route::get('/du-lieu-truyen-thong', [App\Http\Controllers\DulieuTruyenThongController::class, 'show']);
 // Night Hunters - Khu Vườn Ma Quái
 Route::get('/khu-vuon-ma-quai', [KhuVuonMaQuaiController::class, 'index'])->name('khuvuonmaquai');
 Route::get('/so-tay-chan-nuoi', [SoTayChanNuoiController::class, 'index'])->name('sotaychannuoi');
 Route::get('/banh-xeo-co-tu', [BanhXeoCoTuController::class, 'index'])->name('banhxeocotu');
+// routes/api.php
+Route::get('/data-posts', [DataPostController::class, 'index']);
+Route::get('/images-data', [ImagesDataController::class, 'index']);
 /*
 |--------------------------------------------------------------------------
 | License Management Routes (New System)
@@ -136,3 +143,87 @@ Route::get('/storage/youtube-videos/{filename}', function ($filename) {
         'Cache-Control' => 'public, max-age=3600',
     ]);
 })->name('storage.youtube-videos');
+// API Routes cho Data Posts
+Route::get('/api/data-posts', function () {
+    try {
+        $posts = DataPost::orderBy('created_at', 'desc')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $posts
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Lỗi tải dữ liệu: ' . $e->getMessage()
+        ], 500);
+    }
+});
+
+// API Routes cho Images Data
+Route::get('/api/images-data', function () {
+    try {
+        $query = ImagesData::query();
+
+        // Filter by type if provided
+        if (request()->has('type')) {
+            $query->where('type', request()->type);
+        }
+
+        $images = $query->orderBy('created_at', 'desc')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $images
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Lỗi tải dữ liệu: ' . $e->getMessage()
+        ], 500);
+    }
+});
+
+// API chi tiết Data Post
+Route::get('/api/data-posts/{id}', function ($id) {
+    try {
+        $post = DataPost::findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $post
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Không tìm thấy bài viết'
+        ], 404);
+    }
+});
+
+// API chi tiết Images Data
+Route::get('/api/images-data/{id}', function ($id) {
+    try {
+        $image = ImagesData::findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $image
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Không tìm thấy media'
+        ], 404);
+    }
+});
+
+// Route cho HTML page
+Route::get('/media-page', function () {
+    return view('media-page'); // Nếu bạn muốn dùng Blade view
+});
+
+// Hoặc serve HTML trực tiếp
+Route::get('/dashboard', function () {
+    return response()->file(public_path('dashboard.html'));
+});
