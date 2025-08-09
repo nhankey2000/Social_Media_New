@@ -50,7 +50,7 @@
                 radial-gradient(circle at 90% 60%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
             animation: floatParticles 12s ease-in-out infinite;
             pointer-events: none;
-            z-index: 0; /* Đảm bảo hiệu ứng nền không ảnh hưởng */
+            z-index: 0;
         }
 
         @keyframes floatParticles {
@@ -92,7 +92,7 @@
             margin-bottom: 32px;
             animation: fadeIn 1s ease-out 0.4s both;
             position: relative;
-            z-index: 30; /* Tăng z-index cho menu-section */
+            z-index: 30;
         }
 
         .tab-menu {
@@ -107,10 +107,9 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
             position: relative;
-            z-index: 30; /* Đảm bảo tab-menu có z-index cao */
+            z-index: 30;
         }
 
-        /* Dropdown Styles */
         .dropdown {
             position: relative;
             display: inline-block;
@@ -159,11 +158,11 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.3);
             margin-top: 5px;
-            z-index: 1000; /* Đảm bảo dropdown luôn nổi lên trên */
+            z-index: 1000;
             max-height: 300px;
             overflow-y: auto;
             min-width: 200px;
-            transform: translateZ(0); /* Tăng hiệu ứng 3D để tránh bị che */
+            transform: translateZ(0);
         }
 
         .dropdown-menu.show {
@@ -240,7 +239,7 @@
             margin-bottom: 32px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             overflow: hidden;
-            z-index: 20; /* Giảm z-index để không che dropdown */
+            z-index: 20;
         }
 
         .content-table th, .content-table td {
@@ -351,7 +350,7 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.7);
-            z-index: 500; /* Giảm z-index của modal để dropdown nổi lên */
+            z-index: 500;
             align-items: center;
             justify-content: center;
             padding: 16px;
@@ -420,7 +419,7 @@
             padding-top: 24px;
             border-top: 1px solid rgba(255, 255, 255, 0.2);
             animation: fadeIn 1s ease-out 1.6s both;
-            z-index: 10; /* Đảm bảo footer không che menu */
+            z-index: 10;
         }
 
         .footer-text {
@@ -477,7 +476,7 @@
 <div class="container">
     <div class="logo-section">
         <div class="logo" style="width: 160px; height: 96px; margin: 0 auto 20px; border-radius: 20px; background: #ffffff; display: flex; align-items: center; justify-content: center; box-shadow: 0 16px 32px rgba(0, 0, 0, 0.1);">
-            <img src="{{ asset('images/logo.png') }}" alt="Logo Ông Đề" style="width: 128px; height: 64px; border-radius: 12px;" onerror="this.style.display='none'">
+            <img src="images/logo.png" alt="Logo Ông Đề" style="width: 128px; height: 64px; border-radius: 12px;" onerror="this.style.display='none'">
         </div>
     </div>
 
@@ -491,7 +490,6 @@
                 </button>
                 <div class="dropdown-menu" id="posts-dropdown">
                     <button class="dropdown-item all-items" onclick="selectContent('posts', 'all', 'Tất Cả')">🔥 Tất Cả Bài Viết</button>
-                    <!-- Danh mục sẽ được load động -->
                 </div>
             </div>
 
@@ -501,7 +499,6 @@
                 </button>
                 <div class="dropdown-menu" id="images-dropdown">
                     <button class="dropdown-item all-items" onclick="selectContent('images', 'all', 'Tất Cả')">🔥 Tất Cả Ảnh</button>
-                    <!-- Danh mục sẽ được load động -->
                 </div>
             </div>
 
@@ -511,7 +508,6 @@
                 </button>
                 <div class="dropdown-menu" id="videos-dropdown">
                     <button class="dropdown-item all-items" onclick="selectContent('videos', 'all', 'Tất Cả')">🔥 Tất Cả Video</button>
-                    <!-- Danh mục sẽ được load động -->
                 </div>
             </div>
         </div>
@@ -554,9 +550,20 @@
     let categories = [];
     let currentType = 'posts';
     let currentCategory = 'all';
+    let currentData = [];
 
     // API endpoints
     const API_BASE_URL = window.location.origin;
+
+    // Shuffle array function - Fisher-Yates algorithm
+    function shuffleArray(array) {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    }
 
     // Load categories khi trang load
     async function loadCategories() {
@@ -570,7 +577,6 @@
             }
         } catch (error) {
             console.log('Categories chưa có dữ liệu hoặc chưa tạo API');
-            // Không hiển thị error, vì có thể chưa tạo bảng categories
         }
     }
 
@@ -590,7 +596,6 @@
             categories.forEach(category => {
                 const item = document.createElement('button');
                 item.className = 'dropdown-item';
-                // Fix: sử dụng ten_danh_muc thay vì name
                 const categoryName = category.ten_danh_muc || category.name || 'Danh mục không tên';
                 item.textContent = `📂 ${categoryName}`;
                 item.onclick = () => selectContent(type, category.id, categoryName);
@@ -639,27 +644,25 @@
         document.getElementById('mainTitle').textContent = `${typeNames[type]} - ${categoryName}`;
         document.getElementById('subtitle').textContent = `Quản lý ${type === 'posts' ? 'bài viết' : type === 'images' ? 'ảnh' : 'video'} thuộc danh mục: ${categoryName}`;
 
-        // Load data
+        // Load data with shuffle
         await loadData(type, categoryId);
     }
 
-    // Load data with category filter
+    // Load data with category filter and auto shuffle
     async function loadData(type, categoryId = 'all') {
         const contentArea = document.getElementById('contentArea');
 
         try {
-            contentArea.innerHTML = '<div class="loading">⏳ Đang tải dữ liệu...</div>';
+            contentArea.innerHTML = '<div class="loading">🎲 Đang tải dữ liệu ngẫu nhiên...</div>';
 
             let url;
             if (categoryId === 'all') {
-                // Load tất cả data (API cũ)
                 if (type === 'posts') {
                     url = `${API_BASE_URL}/api/data-posts`;
                 } else {
                     url = `${API_BASE_URL}/api/images-data?type=${type === 'images' ? 'image' : 'video'}`;
                 }
             } else {
-                // Load data theo category (API mới)
                 url = `${API_BASE_URL}/api/categories/${categoryId}/${type}`;
             }
 
@@ -672,10 +675,13 @@
 
             if (!data.success || !data.data || data.data.length === 0) {
                 contentArea.innerHTML = '<div class="error">📭 Không có dữ liệu để hiển thị</div>';
+                currentData = [];
                 return;
             }
 
-            renderTable(data.data, type);
+            // Lưu và shuffle dữ liệu
+            currentData = data.data;
+            renderTable(currentData, type);
 
         } catch (error) {
             console.error('Error loading data:', error);
@@ -683,15 +689,18 @@
         }
     }
 
-    // Render table based on type
+    // Render table based on type with auto shuffle
     function renderTable(items, type) {
         const contentArea = document.getElementById('contentArea');
+
+        // Shuffle dữ liệu mỗi lần render
+        const shuffledItems = shuffleArray(items);
 
         let columns, rows;
 
         if (type === 'posts') {
             columns = ['Tiêu Đề', 'Loại', 'Nội Dung', 'Hành Động'];
-            rows = items.map(item => `
+            rows = shuffledItems.map(item => `
                 <tr>
                     <td><strong>${item.title && item.title.length > 13 ? item.title.substring(0, 13) + '...' : (item.title || 'Không có tiêu đề')}</strong></td>
                     <td><span class="type-badge ${item.type}">${item.type === 'image' ? 'Ảnh' : 'Video'}</span></td>
@@ -704,7 +713,7 @@
             `).join('');
         } else {
             columns = ['Preview', 'Loại', 'Ngày Tạo', 'Hành Động'];
-            rows = items.map(item => `
+            rows = shuffledItems.map(item => `
                 <tr>
                     <td>
                         ${item.url ?
@@ -847,7 +856,7 @@
         // Load categories nếu có
         await loadCategories();
 
-        // Load default content (tất cả bài viết)
+        // Load default content (tất cả bài viết) với shuffle
         await selectContent('posts', 'all', 'Tất Cả');
     });
 </script>
