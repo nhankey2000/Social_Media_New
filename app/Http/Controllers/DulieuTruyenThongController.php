@@ -8,6 +8,6 @@ class DulieuTruyenThongController extends Controller
 {
     public function show()
     {
-        return view('dulieuTruyenThong');
+        return view('dulieutruyenthong');
     }
 }
