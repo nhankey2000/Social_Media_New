@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\DataPostResource\Pages;
 use App\Models\DataPost;
 use App\Models\ImagesData;
+use App\Models\DanhmucData;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -33,22 +34,69 @@ class DataPostResource extends Resource
                         'video' => 'Video',
                         'image' => 'Image',
                     ])
-                    ->required(),
+                    ->required()
+                    ->live()
+                    ->afterStateUpdated(fn (callable $set) => $set('files', [])),
+
+                Forms\Components\Select::make('id_danhmuc_data')
+                    ->label('Danh mục')
+                    ->options(DanhmucData::pluck('ten_danh_muc', 'id'))
+                    ->searchable()
+                    ->required()
+                    ->createOptionForm([
+                        Forms\Components\TextInput::make('ten_danh_muc')
+                            ->label('Tên danh mục')
+                            ->required()
+                            ->maxLength(255),
+                    ])
+                    ->createOptionAction(fn ($action) => $action->modalHeading('Thêm danh mục mới'))
+                    ->createOptionUsing(function (array $data) {
+                        $danhmuc = DanhmucData::create([
+                            'ten_danh_muc' => $data['ten_danh_muc'],
+                        ]);
+                        return $danhmuc->id;
+                    }),
 
                 Forms\Components\Textarea::make('content')
                     ->required()
                     ->rows(5),
 
-                Forms\Components\FileUpload::make('images')
-                    ->label('Upload Images')
-                    ->image()
+                Forms\Components\FileUpload::make('files')
+                    ->label('Upload Files')
                     ->multiple()
-                    ->directory('data-post-images')
+                    ->directory('data-post-files')
                     ->disk('public')
-                    ->maxFiles(10)
+                    ->required()
+                    ->maxFiles(20)
                     ->reorderable()
-                    ->helperText('Upload up to 10 images')
+                    ->acceptedFileTypes(function (callable $get) {
+                        $type = $get('type');
+                        if ($type === 'image') {
+                            return ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/jpg'];
+                        } elseif ($type === 'video') {
+                            return ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/webm'];
+                        }
+                        return [];
+                    })
+                    ->maxSize(function (callable $get) {
+                        $type = $get('type');
+                        return $type === 'video' ? 204800 : 20480; // 200MB for video, 20MB for image
+                    })
+                    ->helperText(function (callable $get) {
+                        $type = $get('type');
+                        if ($type === 'image') {
+                            return 'Upload up to 20 images (JPG, PNG, GIF, WebP) - Max 20MB each';
+                        } elseif ($type === 'video') {
+                            return 'Upload up to 20 videos (MP4, AVI, MOV, WMV, WebM) - Max 200MB each';
+                        }
+                        return 'Please select a type first to enable file upload';
+                    })
+                    ->visible(fn (callable $get): bool => !empty($get('type')))
                     ->columnSpanFull(),
+
+                // Hidden field để lưu existing files cho edit
+                Forms\Components\Hidden::make('existing_files')
+                    ->visible(fn (?DataPost $record): bool => $record !== null),
             ]);
     }
 
@@ -63,6 +111,11 @@ class DataPostResource extends Resource
                     ->searchable()
                     ->sortable(),
 
+                Tables\Columns\TextColumn::make('danhmucData.ten_danh_muc')
+                    ->label('Danh mục')
+                    ->searchable()
+                    ->sortable(),
+
                 Tables\Columns\BadgeColumn::make('type')
                     ->colors([
                         'primary' => 'video',
@@ -74,7 +127,7 @@ class DataPostResource extends Resource
 
                 Tables\Columns\TextColumn::make('imagesData_count')
                     ->counts('imagesData')
-                    ->label('Images')
+                    ->label('Files')
                     ->badge()
                     ->color('warning'),
 
@@ -88,6 +141,9 @@ class DataPostResource extends Resource
                         'video' => 'Video',
                         'image' => 'Image',
                     ]),
+                Tables\Filters\SelectFilter::make('id_danhmuc_data')
+                    ->label('Danh mục')
+                    ->options(DanhmucData::pluck('ten_danh_muc', 'id')),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -116,45 +172,47 @@ class DataPostResource extends Resource
         ];
     }
 
-    // Custom methods để xử lý ảnh
-    public static function handleImagesSave($record, $images)
+    // Helper methods để xử lý files
+    public static function saveFilesToImagesData($post, $files)
     {
-        if (!empty($images)) {
-            foreach ($images as $imagePath) {
+        if (!empty($files)) {
+            foreach ($files as $file) {
                 ImagesData::create([
-                    'post_id' => $record->id,
-                    'type' => $record->type,
-                    'url' => Storage::url($imagePath),
+                    'post_id' => $post->id,
+                    'type' => $post->type,
+                    'id_danhmuc_data' => $post->id_danhmuc_data,
+                    'url' => Storage::url($file),
                     'created_at' => now(),
                 ]);
             }
         }
     }
 
-    public static function handleImagesUpdate($record, $images)
+    public static function updateFilesInImagesData($post, $files)
     {
-        // Xóa ảnh cũ
-        ImagesData::where('post_id', $record->id)->delete();
+        // Xóa files cũ
+        ImagesData::where('post_id', $post->id)->delete();
 
-        // Lưu ảnh mới
-        if (!empty($images)) {
-            foreach ($images as $imagePath) {
+        // Lưu files mới
+        if (!empty($files)) {
+            foreach ($files as $file) {
                 ImagesData::create([
-                    'post_id' => $record->id,
-                    'type' => $record->type,
-                    'url' => Storage::url($imagePath),
+                    'post_id' => $post->id,
+                    'type' => $post->type,
+                    'id_danhmuc_data' => $post->id_danhmuc_data,
+                    'url' => Storage::url($file),
                     'created_at' => now(),
                 ]);
             }
         }
     }
 
-    public static function getExistingImages($record)
+    public static function getExistingFiles($post)
     {
-        return ImagesData::where('post_id', $record->id)
+        return ImagesData::where('post_id', $post->id)
             ->pluck('url')
             ->map(function ($url) {
-                return str_replace(Storage::url(''), '', $url);
+                return str_replace('/storage/', '', $url);
             })
             ->toArray();
     }

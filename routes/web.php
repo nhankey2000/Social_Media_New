@@ -21,6 +21,7 @@ use App\Http\Controllers\BanhXeoCoTuController;
 use App\Http\Controllers\DulieuTruyenThongController;
 use App\Models\DataPost;
 use App\Models\ImagesData;
+use App\Models\DanhmucData;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -226,4 +227,106 @@ Route::get('/media-page', function () {
 // Hoặc serve HTML trực tiếp
 Route::get('/dashboard', function () {
     return response()->file(public_path('dashboard.html'));
+});
+// API lấy tất cả danh mục
+Route::get('/api/categories', function () {
+    try {
+        $categories = DanhmucData::orderBy('ten_danh_muc', 'asc')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $categories
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Lỗi tải dữ liệu: ' . $e->getMessage()
+        ], 500);
+    }
+});
+
+// API lấy bài viết theo danh mục
+Route::get('/api/categories/{categoryId}/posts', function ($categoryId) {
+    try {
+        $query = DataPost::query();
+
+        if ($categoryId !== 'all') {
+            $query->where('id_danhmuc_data', $categoryId);
+        }
+
+        $posts = $query->orderBy('created_at', 'desc')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $posts
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Lỗi tải dữ liệu: ' . $e->getMessage()
+        ], 500);
+    }
+});
+
+// API lấy ảnh theo danh mục
+Route::get('/api/categories/{categoryId}/images', function ($categoryId) {
+    try {
+        $query = ImagesData::where('type', 'image');
+
+        if ($categoryId !== 'all') {
+            $query->where('id_danhmuc_data', $categoryId);
+        }
+
+        $images = $query->orderBy('created_at', 'desc')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $images
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Lỗi tải dữ liệu: ' . $e->getMessage()
+        ], 500);
+    }
+});
+
+// API lấy video theo danh mục
+Route::get('/api/categories/{categoryId}/videos', function ($categoryId) {
+    try {
+        $query = ImagesData::where('type', 'video');
+
+        if ($categoryId !== 'all') {
+            $query->where('id_danhmuc_data', $categoryId);
+        }
+
+        $videos = $query->orderBy('created_at', 'desc')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $videos
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Lỗi tải dữ liệu: ' . $e->getMessage()
+        ], 500);
+    }
+});
+
+// API lấy chi tiết danh mục
+Route::get('/api/categories/{id}', function ($id) {
+    try {
+        $category = DanhmucData::findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $category
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Không tìm thấy danh mục'
+        ], 404);
+    }
 });

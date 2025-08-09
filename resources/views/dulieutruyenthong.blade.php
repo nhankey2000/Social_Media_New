@@ -50,6 +50,7 @@
                 radial-gradient(circle at 90% 60%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
             animation: floatParticles 12s ease-in-out infinite;
             pointer-events: none;
+            z-index: 0; /* Đảm bảo hiệu ứng nền không ảnh hưởng */
         }
 
         @keyframes floatParticles {
@@ -65,10 +66,6 @@
             animation: fadeInUp 0.8s ease-out;
             position: relative;
             z-index: 10;
-        }
-
-        .container p {
-            color: white;
         }
 
         .header-title {
@@ -94,6 +91,8 @@
         .menu-section {
             margin-bottom: 32px;
             animation: fadeIn 1s ease-out 0.4s both;
+            position: relative;
+            z-index: 30; /* Tăng z-index cho menu-section */
         }
 
         .tab-menu {
@@ -107,17 +106,17 @@
             padding: 8px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            max-width: 100%;
-            overflow-x: auto;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
+            position: relative;
+            z-index: 30; /* Đảm bảo tab-menu có z-index cao */
         }
 
-        .tab-menu::-webkit-scrollbar {
-            display: none;
+        /* Dropdown Styles */
+        .dropdown {
+            position: relative;
+            display: inline-block;
         }
 
-        .tab-item {
+        .dropdown-toggle {
             padding: 10px 16px;
             border-radius: 12px;
             background: transparent;
@@ -128,15 +127,19 @@
             cursor: pointer;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             white-space: nowrap;
-            min-width: 100px;
+            min-width: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
         }
 
-        .tab-item:hover {
+        .dropdown-toggle:hover {
             color: white;
             transform: translateY(-2px);
         }
 
-        .tab-item.active {
+        .dropdown-toggle.active {
             background: rgba(255, 255, 255, 0.95);
             color: #1f2937;
             font-weight: 600;
@@ -144,32 +147,57 @@
             transform: translateY(-2px);
         }
 
-        .logo-section {
-            margin-bottom: 20px;
-            animation: fadeIn 1s ease-out 0.2s both;
-        }
-
-        .logo {
-            width: 160px;
-            height: 96px;
-            margin: 0 auto 20px;
-            border-radius: 20px;
-            background: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-        }
-
-        .logo:hover {
-            transform: translateY(-4px);
-        }
-
-        .logo img {
-            width: 128px;
-            height: 64px;
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
             border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            margin-top: 5px;
+            z-index: 1000; /* Đảm bảo dropdown luôn nổi lên trên */
+            max-height: 300px;
+            overflow-y: auto;
+            min-width: 200px;
+            transform: translateZ(0); /* Tăng hiệu ứng 3D để tránh bị che */
+        }
+
+        .dropdown-menu.show {
+            display: block;
+        }
+
+        .dropdown-item {
+            display: block;
+            width: 100%;
+            padding: 12px 16px;
+            color: #1f2937;
+            text-decoration: none;
+            background: transparent;
+            border: none;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(0, 0, 0, 0.1);
+            color: #000;
+        }
+
+        .dropdown-item.all-items {
+            font-weight: 600;
+            background: rgba(0, 0, 0, 0.05);
+            color: #2563eb;
         }
 
         .main-title {
@@ -212,6 +240,7 @@
             margin-bottom: 32px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             overflow: hidden;
+            z-index: 20; /* Giảm z-index để không che dropdown */
         }
 
         .content-table th, .content-table td {
@@ -219,7 +248,7 @@
             text-align: left;
             border-bottom: 1px solid rgba(0, 0, 0, 0.1);
             font-size: 0.85rem;
-            min-width: 80px; /* Ensure minimum width for mobile */
+            min-width: 80px;
         }
 
         .content-table th {
@@ -314,19 +343,6 @@
             font-size: 1rem;
         }
 
-        .footer {
-            margin-top: 32px;
-            padding-top: 24px;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-            animation: fadeIn 1s ease-out 1.6s both;
-        }
-
-        .footer-text {
-            font-size: 0.8rem;
-            color: white;
-            margin-bottom: 4px;
-        }
-
         .modal {
             display: none;
             position: fixed;
@@ -335,7 +351,7 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.7);
-            z-index: 1000;
+            z-index: 500; /* Giảm z-index của modal để dropdown nổi lên */
             align-items: center;
             justify-content: center;
             padding: 16px;
@@ -399,50 +415,33 @@
             border-radius: 8px;
         }
 
+        .footer {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            animation: fadeIn 1s ease-out 1.6s both;
+            z-index: 10; /* Đảm bảo footer không che menu */
+        }
+
+        .footer-text {
+            font-size: 0.8rem;
+            color: white;
+            margin-bottom: 4px;
+        }
+
         @media (max-width: 768px) {
-            body {
-                padding: 12px;
+            .dropdown-menu {
+                position: relative;
+                top: 0;
+                margin-top: 8px;
+                box-shadow: none;
+                border: 1px solid rgba(0,0,0,0.1);
             }
 
-            .container {
-                padding: 0 8px;
-            }
-
-            .header-title {
-                font-size: 1.8rem;
-                margin-bottom: 20px;
-            }
-
-            .main-title {
-                font-size: 1.8rem;
-                margin-bottom: 10px;
-            }
-
-            .subtitle {
-                font-size: 0.95rem;
-                margin-bottom: 24px;
-            }
-
-            .logo {
-                width: 120px;
-                height: 72px;
-                margin-bottom: 16px;
-            }
-
-            .logo img {
-                width: 96px;
-                height: 48px;
-            }
-
-            .tab-menu {
-                gap: 6px;
-                padding: 6px;
-            }
-
-            .tab-item {
-                padding: 8px 12px;
+            .dropdown-toggle {
+                min-width: 100px;
                 font-size: 0.8rem;
-                min-width: 90px;
+                padding: 8px 12px;
             }
 
             .content-table {
@@ -454,7 +453,7 @@
             .content-table th, .content-table td {
                 padding: 8px;
                 font-size: 0.75rem;
-                min-width: 80px; /* Adjusted for better mobile display */
+                min-width: 80px;
             }
 
             .media-preview {
@@ -466,102 +465,10 @@
                 width: 32px;
                 height: 32px;
                 padding: 6px;
-                font-size: 0.75rem;
             }
 
             .media-button i {
                 font-size: 0.9rem;
-            }
-
-            .modal-content {
-                padding: 12px;
-                max-width: 95vw;
-                max-height: 85vh;
-            }
-
-            .modal-table th, .modal-table td {
-                padding: 8px;
-                font-size: 0.75rem;
-            }
-
-            .media-modal-content img,
-            .media-modal-content video {
-                max-height: 50vh;
-            }
-
-            .footer-text {
-                font-size: 0.75rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .header-title {
-                font-size: 1.5rem;
-                margin-bottom: 16px;
-            }
-
-            .main-title {
-                font-size: 1.5rem;
-                margin-bottom: 8px;
-            }
-
-            .subtitle {
-                font-size: 0.85rem;
-                margin-bottom: 20px;
-            }
-
-            .logo {
-                width: 100px;
-                height: 60px;
-            }
-
-            .logo img {
-                width: 80px;
-                height: 40px;
-            }
-
-            .tab-item {
-                padding: 6px 10px;
-                font-size: 0.75rem;
-                min-width: 80px;
-            }
-
-            .content-table th, .content-table td {
-                padding: 6px;
-                font-size: 0.7rem;
-                min-width: 80px; /* Adjusted for better mobile display */
-            }
-
-            .media-preview {
-                width: 60px;
-                height: 60px;
-            }
-
-            .media-button {
-                width: 28px;
-                height: 28px;
-                padding: 5px;
-                font-size: 0.7rem;
-            }
-
-            .media-button i {
-                font-size: 0.8rem;
-            }
-
-            .modal-content {
-                padding: 10px;
-                max-width: 98vw;
-            }
-
-            .modal-table th, .modal-table td {
-                padding: 6px;
-                font-size: 0.7rem;
-            }
-
-            .close-button {
-                top: 10px;
-                right: 10px;
-                font-size: 1rem;
             }
         }
     </style>
@@ -569,18 +476,44 @@
 <body>
 <div class="container">
     <div class="logo-section">
-        <div class="logo">
-            <img src="{{ asset('images/logo.png') }}" alt="Logo Ông Đề" onerror="this.style.display='none'">
+        <div class="logo" style="width: 160px; height: 96px; margin: 0 auto 20px; border-radius: 20px; background: #ffffff; display: flex; align-items: center; justify-content: center; box-shadow: 0 16px 32px rgba(0, 0, 0, 0.1);">
+            <img src="{{ asset('images/logo.png') }}" alt="Logo Ông Đề" style="width: 128px; height: 64px; border-radius: 12px;" onerror="this.style.display='none'">
         </div>
     </div>
 
-    <h1 class="header-title">Hệ Thống Quản Lý Nội Dung</h1>
+    <h1 class="header-title">🌟 Hệ Thống Quản Lý Nội Dung</h1>
 
     <div class="menu-section">
         <div class="tab-menu">
-            <button class="tab-item active" onclick="selectContent('posts', this)">Nội Dung Bài Viết</button>
-            <button class="tab-item" onclick="selectContent('images', this)">Kho Ảnh</button>
-            <button class="tab-item" onclick="selectContent('videos', this)">Kho Video</button>
+            <div class="dropdown">
+                <button class="dropdown-toggle active" onclick="toggleDropdown('posts')">
+                    📝 Nội Dung Bài Viết <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown-menu" id="posts-dropdown">
+                    <button class="dropdown-item all-items" onclick="selectContent('posts', 'all', 'Tất Cả')">🔥 Tất Cả Bài Viết</button>
+                    <!-- Danh mục sẽ được load động -->
+                </div>
+            </div>
+
+            <div class="dropdown">
+                <button class="dropdown-toggle" onclick="toggleDropdown('images')">
+                    🖼️ Kho Ảnh <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown-menu" id="images-dropdown">
+                    <button class="dropdown-item all-items" onclick="selectContent('images', 'all', 'Tất Cả')">🔥 Tất Cả Ảnh</button>
+                    <!-- Danh mục sẽ được load động -->
+                </div>
+            </div>
+
+            <div class="dropdown">
+                <button class="dropdown-toggle" onclick="toggleDropdown('videos')">
+                    🎥 Kho Video <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown-menu" id="videos-dropdown">
+                    <button class="dropdown-item all-items" onclick="selectContent('videos', 'all', 'Tất Cả')">🔥 Tất Cả Video</button>
+                    <!-- Danh mục sẽ được load động -->
+                </div>
+            </div>
         </div>
     </div>
 
@@ -588,9 +521,10 @@
     <p class="subtitle" id="subtitle">Quản lý các bài viết và nội dung</p>
 
     <div id="contentArea">
-        <div class="loading">Đang tải dữ liệu...</div>
+        <div class="loading">⏳ Đang tải dữ liệu...</div>
     </div>
 
+    <!-- Modal cho chi tiết bài viết -->
     <div class="modal" id="postModal">
         <div class="modal-content">
             <span class="close-button" onclick="closeModal('postModal')">&times;</span>
@@ -599,6 +533,7 @@
         </div>
     </div>
 
+    <!-- Modal cho xem media -->
     <div class="modal" id="mediaModal">
         <div class="modal-content">
             <span class="close-button" onclick="closeModal('mediaModal')">&times;</span>
@@ -615,199 +550,215 @@
 </div>
 
 <script>
+    // Global variables
+    let categories = [];
+    let currentType = 'posts';
+    let currentCategory = 'all';
+
     // API endpoints
     const API_BASE_URL = window.location.origin;
 
-    const apiEndpoints = {
-        posts: `${API_BASE_URL}/api/data-posts`,
-        images: `${API_BASE_URL}/api/images-data?type=image`,
-        videos: `${API_BASE_URL}/api/images-data?type=video`
-    };
+    // Load categories khi trang load
+    async function loadCategories() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/categories`);
+            const data = await response.json();
 
-    // Content configuration
-    const contentConfig = {
-        posts: {
-            title: "Nội Dung Bài Viết",
-            subtitle: "Quản lý các bài viết và nội dung",
-            columns: ['Tiêu Đề', 'Loại', 'Nội Dung',  'Hành Động'],
-            renderRow: (item) => `
+            if (data.success && data.data) {
+                categories = data.data;
+                populateDropdowns();
+            }
+        } catch (error) {
+            console.log('Categories chưa có dữ liệu hoặc chưa tạo API');
+            // Không hiển thị error, vì có thể chưa tạo bảng categories
+        }
+    }
+
+    // Điền danh mục vào các dropdown
+    function populateDropdowns() {
+        const dropdowns = ['posts', 'images', 'videos'];
+
+        dropdowns.forEach(type => {
+            const dropdown = document.getElementById(`${type}-dropdown`);
+            if (!dropdown) return;
+
+            // Xóa các item cũ (trừ "Tất cả")
+            const oldItems = dropdown.querySelectorAll('.dropdown-item:not(.all-items)');
+            oldItems.forEach(item => item.remove());
+
+            // Thêm các danh mục
+            categories.forEach(category => {
+                const item = document.createElement('button');
+                item.className = 'dropdown-item';
+                // Fix: sử dụng ten_danh_muc thay vì name
+                const categoryName = category.ten_danh_muc || category.name || 'Danh mục không tên';
+                item.textContent = `📂 ${categoryName}`;
+                item.onclick = () => selectContent(type, category.id, categoryName);
+                dropdown.appendChild(item);
+            });
+        });
+    }
+
+    // Toggle dropdown
+    function toggleDropdown(type) {
+        // Đóng tất cả dropdown khác
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+            if (menu.id !== `${type}-dropdown`) {
+                menu.classList.remove('show');
+            }
+        });
+
+        // Toggle dropdown hiện tại
+        const dropdown = document.getElementById(`${type}-dropdown`);
+        dropdown.classList.toggle('show');
+
+        // Update active state
+        document.querySelectorAll('.dropdown-toggle').forEach(toggle => {
+            toggle.classList.remove('active');
+        });
+        event.target.classList.add('active');
+    }
+
+    // Select content with category
+    async function selectContent(type, categoryId = 'all', categoryName = 'Tất Cả') {
+        currentType = type;
+        currentCategory = categoryId;
+
+        // Đóng dropdown
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+            menu.classList.remove('show');
+        });
+
+        // Update titles
+        const typeNames = {
+            posts: 'Nội Dung Bài Viết',
+            images: 'Kho Ảnh',
+            videos: 'Kho Video'
+        };
+
+        document.getElementById('mainTitle').textContent = `${typeNames[type]} - ${categoryName}`;
+        document.getElementById('subtitle').textContent = `Quản lý ${type === 'posts' ? 'bài viết' : type === 'images' ? 'ảnh' : 'video'} thuộc danh mục: ${categoryName}`;
+
+        // Load data
+        await loadData(type, categoryId);
+    }
+
+    // Load data with category filter
+    async function loadData(type, categoryId = 'all') {
+        const contentArea = document.getElementById('contentArea');
+
+        try {
+            contentArea.innerHTML = '<div class="loading">⏳ Đang tải dữ liệu...</div>';
+
+            let url;
+            if (categoryId === 'all') {
+                // Load tất cả data (API cũ)
+                if (type === 'posts') {
+                    url = `${API_BASE_URL}/api/data-posts`;
+                } else {
+                    url = `${API_BASE_URL}/api/images-data?type=${type === 'images' ? 'image' : 'video'}`;
+                }
+            } else {
+                // Load data theo category (API mới)
+                url = `${API_BASE_URL}/api/categories/${categoryId}/${type}`;
+            }
+
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (!data.success || !data.data || data.data.length === 0) {
+                contentArea.innerHTML = '<div class="error">📭 Không có dữ liệu để hiển thị</div>';
+                return;
+            }
+
+            renderTable(data.data, type);
+
+        } catch (error) {
+            console.error('Error loading data:', error);
+            contentArea.innerHTML = `<div class="error">❌ Lỗi tải dữ liệu: ${error.message}</div>`;
+        }
+    }
+
+    // Render table based on type
+    function renderTable(items, type) {
+        const contentArea = document.getElementById('contentArea');
+
+        let columns, rows;
+
+        if (type === 'posts') {
+            columns = ['Tiêu Đề', 'Loại', 'Nội Dung', 'Hành Động'];
+            rows = items.map(item => `
                 <tr>
-                    <td><strong>${item.title.length >13 ? item.title.substring(0, 13) + '...' : item.title}</strong></td>
+                    <td><strong>${item.title && item.title.length > 13 ? item.title.substring(0, 13) + '...' : (item.title || 'Không có tiêu đề')}</strong></td>
                     <td><span class="type-badge ${item.type}">${item.type === 'image' ? 'Ảnh' : 'Video'}</span></td>
                     <td>${item.content ? item.content.substring(0, 100) + '...' : 'Không có nội dung'}</td>
-
                     <td>
                         <button class="media-button copy" onclick="copyContent('${encodeURIComponent(item.content || '')}')"><i class="fas fa-clipboard"></i></button>
-                        <button class="media-button view" onclick="viewPost(${item.id}, '${encodeURIComponent(item.title)}', '${encodeURIComponent(item.content || '')}', '${item.type}', '${formatDate(item.created_at)}')"><i class="fas fa-eye"></i></button>
+                        <button class="media-button view" onclick="viewPost(${item.id}, '${encodeURIComponent(item.title || '')}', '${encodeURIComponent(item.content || '')}', '${item.type}', '${formatDate(item.created_at)}')"><i class="fas fa-eye"></i></button>
                     </td>
                 </tr>
-            `
-        },
-        images: {
-            title: "Kho Ảnh",
-            subtitle: "Quản lý và xem các hình ảnh",
-            columns: ['Preview', 'Loại', 'Ngày Tạo', 'Hành Động'],
-            renderRow: (item) => `
+            `).join('');
+        } else {
+            columns = ['Preview', 'Loại', 'Ngày Tạo', 'Hành Động'];
+            rows = items.map(item => `
                 <tr>
                     <td>
-                        ${item.url ? `<img src="${item.url}" alt="Preview" class="media-preview" onerror="this.style.display='none'">` : 'Không có ảnh'}
+                        ${item.url ?
+                (item.type === 'image' ?
+                        `<img src="${item.url}" alt="Preview" class="media-preview" onerror="this.style.display='none'">` :
+                        `<video class="media-preview" muted><source src="${item.url}" type="video/mp4"></video>`
+                ) :
+                'Không có file'
+            }
                     </td>
                     <td><span class="type-badge ${item.type}">${item.type === 'image' ? 'Ảnh' : 'Video'}</span></td>
                     <td>${formatDate(item.created_at)}</td>
                     <td>
                         ${item.url ? `
-                            <button class="media-button view" onclick="viewMedia('${item.url}', 'image')"><i class="fas fa-eye"></i></button>
+                            <button class="media-button view" onclick="viewMedia('${item.url}', '${item.type}')"><i class="fas fa-eye"></i></button>
                             <button class="media-button download" onclick="downloadMedia('${item.url}')"><i class="fas fa-download"></i></button>
                         ` : 'Không có tệp'}
                     </td>
                 </tr>
-            `
-        },
-        videos: {
-            title: "Kho Video",
-            subtitle: "Quản lý và xem các video",
-            columns: ['Preview', 'Loại', 'Ngày Tạo', 'Hành Động'],
-            renderRow: (item) => `
-                <tr>
-                    <td>
-                        ${item.url ? `<video class="media-preview" muted><source src="${item.url}" type="video/mp4"></video>` : 'Không có video'}
-                    </td>
-                    <td><span class="type-badge ${item.type}">${item.type === 'image' ? 'Ảnh' : 'Video'}</span></td>
-                    <td>${formatDate(item.created_at)}</td>
-                    <td>
-                        ${item.url ? `
-                            <button class="media-button view" onclick="viewMedia('${item.url}', 'video')"><i class="fas fa-eye"></i></button>
-                            <button class="media-button download" onclick="downloadMedia('${item.url}')"><i class="fas fa-download"></i></button>
-                        ` : 'Không có tệp'}
-                    </td>
-                </tr>
-            `
+            `).join('');
         }
-    };
 
-    // Current active content type
-    let currentContentType = 'posts';
+        contentArea.innerHTML = `
+            <table class="content-table">
+                <thead>
+                    <tr>${columns.map(col => `<th>${col}</th>`).join('')}</tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        `;
+    }
 
-    // Function to format date
+    // Format date
     function formatDate(dateString) {
         if (!dateString) return 'Không có';
         const date = new Date(dateString);
         return date.toLocaleDateString('vi-VN') + ' ' + date.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'});
     }
 
-    // Function to select content type
-    async function selectContent(contentKey, tabElement) {
-        document.querySelectorAll('.tab-item').forEach(item => item.classList.remove('active'));
-        tabElement.classList.add('active');
-
-        const config = contentConfig[contentKey];
-        document.getElementById('mainTitle').textContent = config.title;
-        document.getElementById('subtitle').textContent = config.subtitle;
-
-        currentContentType = contentKey;
-        await loadData(contentKey);
-    }
-
-    // Function to load data from API
-    async function loadData(contentType) {
-        const contentArea = document.getElementById('contentArea');
-        const config = contentConfig[contentType];
-
-        try {
-            contentArea.innerHTML = '<div class="loading">Đang tải dữ liệu...</div>';
-
-            const response = await fetch(apiEndpoints[contentType]);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            const items = data.data || data;
-
-            if (!Array.isArray(items) || items.length === 0) {
-                contentArea.innerHTML = '<div class="error">Không có dữ liệu để hiển thị</div>';
-                return;
-            }
-
-            contentArea.innerHTML = `
-                <table class="content-table">
-                    <thead>
-                        <tr>
-                            ${config.columns.map(col => `<th>${col}</th>`).join('')}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${items.map(item => config.renderRow(item)).join('')}
-                    </tbody>
-                </table>
-            `;
-
-        } catch (error) {
-            console.error('Error loading data:', error);
-            contentArea.innerHTML = `<div class="error">Lỗi tải dữ liệu: ${error.message}</div>`;
-        }
-    }
-
-    // Function to view media in modal
-    function viewMedia(url, type) {
-        const modal = document.getElementById('mediaModal');
-        const modalContent = document.getElementById('mediaModalContent');
-
-        if (type === 'image') {
-            modalContent.innerHTML = `
-                <div class="media-modal-content">
-                    <img src="${url}" alt="Image Preview">
-                    <div>
-                        <button class="media-button download" onclick="downloadMedia('${url}')"><i class="fas fa-download"></i></button>
-                    </div>
-                </div>
-            `;
-        } else if (type === 'video') {
-            modalContent.innerHTML = `
-                <div class="media-modal-content">
-                    <video controls autoplay>
-                        <source src="${url}" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                    <div>
-                        <button class="media-button download" onclick="downloadMedia('${url}')"><i class="fas fa-download"></i></button>
-                    </div>
-                </div>
-            `;
-        }
-
-        modal.style.display = 'flex';
-    }
-
-    // Function to download media
-    function downloadMedia(url) {
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = url.split('/').pop();
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-
-    // Function to copy content
+    // Copy content
     function copyContent(content) {
         const decodedContent = decodeURIComponent(content);
         navigator.clipboard.writeText(decodedContent).then(() => {
-            alert('Đã sao chép nội dung!');
+            alert('📋 Đã sao chép nội dung!');
         }).catch(err => {
-            console.error('Lỗi khi sao chép:', err);
-            alert('Lỗi khi sao chép nội dung');
+            alert('❌ Lỗi khi sao chép nội dung');
         });
     }
 
-    // Function to view post details in modal
+    // View post details
     function viewPost(postId, title, content, type, created_at) {
         const modal = document.getElementById('postModal');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalContent = document.getElementById('modalContent');
-
-        modalTitle.textContent = decodeURIComponent(title);
-        modalContent.innerHTML = `
+        document.getElementById('modalTitle').textContent = decodeURIComponent(title);
+        document.getElementById('modalContent').innerHTML = `
             <table class="modal-table">
                 <tr>
                     <th>ID</th>
@@ -830,20 +781,74 @@
                     <td>${created_at}</td>
                 </tr>
             </table>
-            <button class="media-button copy" style="margin-top: 12px;" onclick="copyContent('${content}')"><i class="fas fa-clipboard"></i></button>
+            <div style="margin-top: 15px;">
+                <button class="media-button copy" onclick="copyContent('${content}')"><i class="fas fa-clipboard"></i> Sao chép</button>
+            </div>
         `;
-
         modal.style.display = 'flex';
     }
 
-    // Function to close modal
+    // View media
+    function viewMedia(url, type) {
+        const modal = document.getElementById('mediaModal');
+        const content = document.getElementById('mediaModalContent');
+
+        if (type === 'image') {
+            content.innerHTML = `
+                <div class="media-modal-content">
+                    <img src="${url}" alt="Image Preview">
+                    <div>
+                        <button class="media-button download" onclick="downloadMedia('${url}')"><i class="fas fa-download"></i> Tải về</button>
+                    </div>
+                </div>
+            `;
+        } else {
+            content.innerHTML = `
+                <div class="media-modal-content">
+                    <video controls autoplay>
+                        <source src="${url}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                    <div>
+                        <button class="media-button download" onclick="downloadMedia('${url}')"><i class="fas fa-download"></i> Tải về</button>
+                    </div>
+                </div>
+            `;
+        }
+        modal.style.display = 'flex';
+    }
+
+    // Download media
+    function downloadMedia(url) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = url.split('/').pop();
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Close modal
     function closeModal(modalId) {
         document.getElementById(modalId).style.display = 'none';
     }
 
-    // Initialize with posts content
-    document.addEventListener('DOMContentLoaded', function() {
-        selectContent('posts', document.querySelector('.tab-item.active'));
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.dropdown')) {
+            document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                menu.classList.remove('show');
+            });
+        }
+    });
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async function() {
+        // Load categories nếu có
+        await loadCategories();
+
+        // Load default content (tất cả bài viết)
+        await selectContent('posts', 'all', 'Tất Cả');
     });
 </script>
 </body>

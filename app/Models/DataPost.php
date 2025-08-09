@@ -17,10 +17,19 @@ class DataPost extends Model
         'title',
         'content',
         'type',
+        'id_danhmuc_data', // Thêm cột mới
     ];
 
+    // Mối quan hệ hasMany với ImagesData
     public function imagesData()
     {
         return $this->hasMany(ImagesData::class, 'post_id', 'id');
     }
+
+    // Mối quan hệ belongsTo với DanhmucData
+    public function danhmucData()
+    {
+        return $this->belongsTo(DanhmucData::class, 'id_danhmuc_data', 'id');
+    }
+
 }

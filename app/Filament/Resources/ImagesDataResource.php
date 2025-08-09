@@ -4,7 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ImagesDataResource\Pages;
 use App\Models\ImagesData;
-use App\Models\DataPost;
+use App\Models\DanhmucData;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -15,9 +15,7 @@ use Illuminate\Support\Facades\Storage;
 class ImagesDataResource extends Resource
 {
     protected static ?string $model = ImagesData::class;
-
     protected static ?string $navigationIcon = 'heroicon-o-photo';
-
     protected static ?string $navigationLabel = 'Images Data';
 
     public static function form(Form $form): Form
@@ -32,6 +30,18 @@ class ImagesDataResource extends Resource
                     ->required()
                     ->live()
                     ->afterStateUpdated(fn (callable $set) => $set('files', [])),
+
+                Forms\Components\Select::make('id_danhmuc_data')
+                    ->label('Danh mục')
+                    ->required()
+                    ->relationship('danhmucData', 'ten_danh_muc')
+                    ->createOptionForm([
+                        Forms\Components\TextInput::make('ten_danh_muc')
+                            ->label('Tên danh mục')
+                            ->required()
+                            ->maxLength(255),
+                    ])
+                    ->createOptionAction(fn ($action) => $action->modalHeading('Thêm danh mục mới')),
 
                 Forms\Components\FileUpload::make('files')
                     ->label('Upload Files')
@@ -48,11 +58,11 @@ class ImagesDataResource extends Resource
                         } elseif ($type === 'video') {
                             return ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/webm'];
                         }
-                        return []; // Không cho upload gì nếu chưa chọn type
+                        return [];
                     })
                     ->maxSize(function (callable $get) {
                         $type = $get('type');
-                        return $type === 'video' ? 204800 : 20480; // 200MB for video, 20MB for image
+                        return $type === 'video' ? 204800 : 20480;
                     })
                     ->helperText(function (callable $get) {
                         $type = $get('type');
@@ -65,6 +75,10 @@ class ImagesDataResource extends Resource
                     })
                     ->visible(fn (callable $get): bool => !empty($get('type')))
                     ->columnSpanFull(),
+
+                // Hidden field để lưu URL cho edit form
+                Forms\Components\Hidden::make('url')
+                    ->visible(fn (?ImagesData $record): bool => $record !== null),
             ]);
     }
 
@@ -80,6 +94,11 @@ class ImagesDataResource extends Resource
                         'primary' => 'video',
                         'success' => 'image',
                     ]),
+
+                Tables\Columns\TextColumn::make('danhmucData.ten_danh_muc')
+                    ->label('Danh mục')
+                    ->searchable()
+                    ->sortable(),
 
                 Tables\Columns\ImageColumn::make('url')
                     ->label('Preview')
@@ -106,6 +125,9 @@ class ImagesDataResource extends Resource
                         'video' => 'Video',
                         'image' => 'Image',
                     ]),
+                Tables\Filters\SelectFilter::make('id_danhmuc_data')
+                    ->label('Danh mục')
+                    ->options(DanhmucData::pluck('ten_danh_muc', 'id')),
             ])
             ->actions([
                 Tables\Actions\Action::make('download')
